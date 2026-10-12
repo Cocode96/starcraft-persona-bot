@@ -121,8 +121,8 @@ def main():
         parser.error('max-frames must be 0..432000')
     if not 0 <= args.seed <= 2147483647:
         parser.error('seed must be 0..2147483647')
-    if args.game_seed is not None and not 0 <= args.game_seed <= 2147483647:
-        parser.error('game-seed must be 0..2147483647')
+    if args.game_seed is not None and not 0 <= args.game_seed <= 4294967295:
+        parser.error('game-seed must be 0..4294967295')
     if not args.prepare_only:
         require_no_game()
     roster = json.loads((ROOT / "dist/players/roster.json").read_text(encoding="utf-8"))
