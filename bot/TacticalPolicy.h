@@ -7,10 +7,13 @@ class TacticalPolicy
 public:
     // Clearance is distance outside visible ground-weapon range, in pixels.
     // Reject paths that deepen contact even when their endpoint looks safe.
-    static double casterPositionScore(int clearance, int pathClearance, int currentClearance, int travel)
+    static double casterPositionScore(int clearance, int pathClearance, int currentClearance, int travel,
+        int regroupDistance = 640, int edgeDistance = 128)
     {
         if (pathClearance < std::min(0, currentClearance) - 16) return -100000;
-        return std::min(320, clearance) - travel * 0.35;
+        const double regroup = clearance >= 96 ? std::max(0, 640 - regroupDistance) * 0.1 : 0;
+        const double room = clearance >= 96 ? std::min(128, edgeDistance) * 0.25 : 0;
+        return std::min(320, clearance) - travel * 0.35 + regroup + room;
     }
 
     enum class Stance { Gather, Advance, Defend, Hold, Retreat };

@@ -72,6 +72,10 @@ def audit_player(folder):
     casters = [list(map(int, row)) for row in rows(root / 'caster-state.tsv')]
     spells = rows(root / 'micro-actions.tsv')
     caster_moves = rows(root / 'caster-moves.tsv')
+    checked_paths = [row for row in caster_moves if len(row) >= 11]
+    unsafe_paths = [row for row in checked_paths if int(row[10]) < min(0, int(row[4])) - 16]
+    if unsafe_paths:
+        findings.append('Caster movement entered deeper visible weapon range along the sampled path.')
     caster_report = {
         'samples': len(casters),
         'units_observed': len({row[2] for row in casters}),
@@ -83,6 +87,8 @@ def audit_player(folder):
         'accepted_evade_moves': sum(row[2] == 'evade' for row in caster_moves),
         'evade_destinations_with_more_clearance': sum(
             row[2] == 'evade' and int(row[5]) > int(row[4]) for row in caster_moves),
+        'path_checked_moves': len(checked_paths),
+        'unsafe_sampled_paths': len(unsafe_paths),
         'scope': 'Sampled state and accepted commands, not damage or caster protection quality.'
     }
     if frame >= 6000 and not scout:

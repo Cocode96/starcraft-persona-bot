@@ -70,6 +70,18 @@ class RuntimeAuditTests(unittest.TestCase):
             self.assertEqual(report['evade_destinations_with_more_clearance'], 1)
             self.assertNotIn('survival_rate', report)
 
+    def test_caster_return_path_checks_include_normal_screen_moves(self):
+        with tempfile.TemporaryDirectory() as root:
+            write = Path(root) / 'bwapi-data/write'
+            write.mkdir(parents=True)
+            (write / 'caster-moves.tsv').write_text(
+                '14000\t10\tscreen\t2\t120\t180\t100\t100\t300\t300\t-80\n'
+                '14048\t10\tevade\t0\t-50\t160\t100\t100\t300\t300\t-50\n')
+            report = audit_player(root)
+            self.assertEqual(report['casters']['path_checked_moves'], 2)
+            self.assertEqual(report['casters']['unsafe_sampled_paths'], 1)
+            self.assertTrue(any('sampled path' in item for item in report['findings']))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -30,6 +30,10 @@ int main()
                 TacticalPolicy::casterPositionScore(40, 40, 40, 0), "Safe endpoint cannot justify crossing enemy fire");
         require(TacticalPolicy::casterPositionScore(320, 320, 320, 0) >
                 TacticalPolicy::casterPositionScore(500, 320, 320, 160), "Safe caster should not flee indefinitely");
+        require(TacticalPolicy::casterPositionScore(240, 0, 0, 160, 128, 128) >
+                TacticalPolicy::casterPositionScore(240, 0, 0, 160, 600, 8), "Equivalent escape should favor escorts and room to move");
+        require(TacticalPolicy::casterPositionScore(320, -80, 40, 160, 0, 128) <
+                TacticalPolicy::casterPositionScore(40, 40, 40, 0), "Regroup bonus cannot authorize crossing enemy fire");
         std::cout << "Tactical execution safeguards validated\n";
     }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }

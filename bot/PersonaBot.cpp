@@ -1131,12 +1131,35 @@ void PersonaBot::army()
             };
             const Position origin = unit->getPosition();
             const int currentClearance = clearance(origin);
+            const Position regroup = screen;
+            const auto nextWaypoint = [&](Position position)
+            {
+                const int length = origin.getApproxDistance(position);
+                return length > 320 ? origin + (position - origin) * 320 / length : position;
+            };
+            const auto pathClearance = [&](Position destination)
+            {
+                int result = currentClearance;
+                const int steps = std::max(1, origin.getApproxDistance(destination) / 32);
+                for (int step = 1; step <= steps; ++step)
+                    result = std::min(result, clearance(origin + (destination - origin) * step / steps));
+                return result;
+            };
+            const auto movementScore = [&](Position position)
+            {
+                const int edge = std::min({position.x, position.y,
+                    Broodwar->mapWidth() * 32 - 1 - position.x, Broodwar->mapHeight() * 32 - 1 - position.y});
+                return TacticalPolicy::casterPositionScore(clearance(position), pathClearance(position),
+                    currentClearance, origin.getApproxDistance(position), position.getApproxDistance(regroup), edge);
+            };
+            screen = nextWaypoint(screen);
             const bool evade = currentClearance < (ready ? 96 : 192) ||
-                clearance(screen) < 96 || unit->isUnderStorm();
+                clearance(screen) < 96 || pathClearance(screen) < std::min(0, currentClearance) - 16 ||
+                !Broodwar->isWalkable(WalkPosition(screen)) || !unit->hasPath(screen) || unit->isUnderStorm();
             if (evade)
             {
                 Position best = origin;
-                double bestMoveScore = TacticalPolicy::casterPositionScore(currentClearance, currentClearance, currentClearance, 0);
+                double bestMoveScore = movementScore(origin);
                 std::vector<Position> candidates{screen, assemblyPoint()};
                 for (int radius : {160, 320})
                     for (int dx = -1; dx <= 1; ++dx)
@@ -1144,22 +1167,23 @@ void PersonaBot::army()
                             if (dx || dy) candidates.push_back(origin + Position(dx * radius, dy * radius));
                 for (auto candidate : candidates)
                 {
+                    candidate = nextWaypoint(candidate);
                     if (!candidate.isValid() || !Broodwar->isWalkable(WalkPosition(candidate)) || !unit->hasPath(candidate)) continue;
-                    int pathClearance = currentClearance;
-                    for (int step = 1; step <= 4; ++step)
-                        pathClearance = std::min(pathClearance, clearance(origin + (candidate - origin) * step / 4));
-                    double score = TacticalPolicy::casterPositionScore(clearance(candidate), pathClearance,
-                        currentClearance, origin.getApproxDistance(candidate));
+                    double score = movementScore(candidate);
                     if (unit->isUnderStorm() && origin.getApproxDistance(candidate) >= 96) score += 160;
                     if (score > bestMoveScore) { bestMoveScore = score; best = candidate; }
                 }
                 screen = best;
             }
-            if (unit->getDistance(screen) > (evade ? 24 : 64) && unit->move(screen))
+            const bool hold = evade && unit->getDistance(screen) <= 24;
+            const bool issued = hold ? unit->isMoving() && unit->stop() :
+                unit->getDistance(screen) > (evade ? 24 : 64) && unit->move(screen);
+            if (issued)
                 std::ofstream("bwapi-data/write/caster-moves.tsv", std::ios::app)
-                    << frame << '\t' << unit->getID() << '\t' << (evade ? "evade" : "screen")
+                    << frame << '\t' << unit->getID() << '\t' << (hold ? "hold" : evade ? "evade" : "screen")
                     << '\t' << escorts << '\t' << currentClearance << '\t' << clearance(screen)
-                    << '\t' << screen.x << '\t' << screen.y << '\n';
+                    << '\t' << screen.x << '\t' << screen.y << '\t' << origin.x << '\t' << origin.y
+                    << '\t' << pathClearance(screen) << '\n';
             continue;
         }
         if (retreating || unit->isUnderStorm())
