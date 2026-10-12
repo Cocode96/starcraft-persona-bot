@@ -5,6 +5,11 @@
 class SupplyPolicy
 {
 public:
+    static int zergBuffer(bool recordedOpening, int completedDepots)
+    {
+        return recordedOpening ? 4 : std::clamp(completedDepots * 4, 8, 48);
+    }
+
     static int protossBuffer(bool recordedOpening, int productionBuildings, int nexuses)
     {
         return recordedOpening ? 4 : std::clamp(productionBuildings * 4 + nexuses * 2, 8, 48);

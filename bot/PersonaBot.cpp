@@ -881,6 +881,13 @@ void PersonaBot::imitationProduction()
         }
         supplyBuffer = SupplyPolicy::protossBuffer(recordedOpening, producers, nexuses);
     }
+    else if (self->getRace() == Races::Zerg)
+    {
+        int depots = 0;
+        for (auto unit : self->getUnits())
+            if (unit->getType().isResourceDepot() && unit->isCompleted()) ++depots;
+        supplyBuffer = SupplyPolicy::zergBuffer(recordedOpening, depots);
+    }
     if (SupplyPolicy::needsProvider(self->supplyUsed(), self->supplyTotal(), pendingSupply, supplyBuffer))
     {
         // During recorded openings only recover a real supply block, preserving observed supply timing.

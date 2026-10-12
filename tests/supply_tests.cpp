@@ -14,6 +14,13 @@ int main()
         require(!SupplyPolicy::needsProvider(392, 384, 16, buffer));
         require(!SupplyPolicy::needsProvider(400, 400, 0, buffer));
         require(SupplyPolicy::protossBuffer(false, 50, 10) == 48);
+        require(SupplyPolicy::zergBuffer(true, 7) == 4);
+        require(SupplyPolicy::zergBuffer(false, 1) == 8);
+        const int zergBuffer = SupplyPolicy::zergBuffer(false, 7);
+        require(zergBuffer == 28);
+        require(SupplyPolicy::needsProvider(180, 190, 16, zergBuffer));
+        require(!SupplyPolicy::needsProvider(180, 190, 32, zergBuffer));
+        require(SupplyPolicy::zergBuffer(false, 20) == 48);
         std::cout << "Supply lead time and pending capacity validated\n";
     }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
