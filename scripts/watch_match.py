@@ -165,7 +165,7 @@ def main():
                 "seed": args.seed,
                 "dll_sha256": hashlib.sha256((folders[0] / 'bwapi-data/AI/PersonaBot.dll').read_bytes()).hexdigest()}
     (session / "match.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    (ROOT / "dist/last-match.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    (ROOT / "dist/last-prepared-match.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"Prepared: {session}")
     if args.prepare_only:
         return
