@@ -15,22 +15,41 @@ void PersonaBot::onStart()
     searchLocations_.clear();
     searchIndex_ = 0;
     config_ = {};
+    scoutWorkerId_ = -1;
+    scoutIndex_ = 0;
+    structureCounts_.clear();
+    knownStructureTypes_.clear();
     if (Broodwar->isReplay() || !Broodwar->self()) return;
-    if (Broodwar->self()->getRace() != Races::Zerg)
-    {
-        Broodwar->printf("PersonaBot currently requires Zerg. Select Zerg before the game.");
-        return;
-    }
     std::ifstream input("bwapi-data/read/persona.ini");
     std::string error;
     if (!input || !config_.load(input, error))
         Broodwar->printf("Persona profile unavailable (%s). Using explicit baseline rules.",
                         input ? error.c_str() : "file missing");
+    // Random/unknown opponents use the pooled profile; do not inspect hidden units.
+    if (config_.schemaVersion == 2 && Broodwar->enemy())
+    {
+        const auto opponent = Broodwar->enemy()->getRace().getName();
+        if (opponent == "Zerg" || opponent == "Terran" || opponent == "Protoss")
+        {
+            std::ifstream matchup("bwapi-data/read/persona-" + opponent + ".ini");
+            PersonaConfig candidate;
+            if (matchup && candidate.load(matchup, error) && candidate.name == config_.name && candidate.race == config_.race)
+                config_ = candidate;
+        }
+    }
+    if (Broodwar->self()->getRace().getName() != config_.race || !validateProfile())
+    {
+        Broodwar->printf("Persona profile/race mismatch. Select %s and check profile files.", config_.race.c_str());
+        return;
+    }
+    random_.seed(config_.seed);
+    finishedSteps_.assign(config_.steps.size(), false);
     for (const auto tile : Broodwar->getStartLocations())
         if (tile != Broodwar->self()->getStartLocation()) searchLocations_.push_back(tile);
     // BWAPI's default visibility restrictions remain enabled.
     active_ = true;
-    Broodwar->printf("PersonaBot: %s, replay samples=%d. Prototype Zerg bot.",
+    for (auto unit : Broodwar->self()->getUnits()) recordStructure(unit);
+    Broodwar->printf("PersonaBot: %s, replay samples=%d. Empirical prototype.",
                     config_.name.c_str(), config_.sampleGames);
 }
 
@@ -39,9 +58,10 @@ int PersonaBot::count(UnitType type) const
     int total = 0;
     for (auto unit : Broodwar->self()->getUnits())
     {
-        if (unit->getType() == type) ++total;
-        else if (unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type)
+        if (unit->getType() == type || (type == UnitTypes::Zerg_Hatchery && unit->getType().isResourceDepot())) ++total;
+        else if (unit->isMorphing() && unit->getBuildType() == type)
             total += type.isTwoUnitsInOneEgg() ? 2 : 1;
+        for (const auto queued : unit->getTrainingQueue()) if (queued == type) ++total;
     }
     return total;
 }
@@ -57,7 +77,7 @@ bool PersonaBot::morph(UnitType type)
 TilePosition PersonaBot::buildTile(UnitType type) const
 {
     const auto home = Broodwar->self()->getStartLocation();
-    if (type == UnitTypes::Zerg_Extractor)
+    if (type.isRefinery())
     {
         TilePosition best = TilePositions::None;
         double distance = std::numeric_limits<double>::max();
@@ -65,7 +85,11 @@ TilePosition PersonaBot::buildTile(UnitType type) const
         {
             const auto tile = geyser->getInitialTilePosition();
             const double d = tile.getDistance(home);
-            if (d < 18 && d < distance && Broodwar->canBuildHere(tile, type))
+            bool nearBase = false;
+            for (auto base : Broodwar->self()->getUnits())
+                if (base->getType().isResourceDepot() && base->isCompleted() &&
+                    tile.getDistance(base->getTilePosition()) < 12) nearBase = true;
+            if (nearBase && d < distance && Broodwar->canBuildHere(tile, type))
             {
                 best = tile;
                 distance = d;
@@ -73,7 +97,7 @@ TilePosition PersonaBot::buildTile(UnitType type) const
         }
         return best;
     }
-    if (type == UnitTypes::Zerg_Hatchery)
+    if (type.isResourceDepot())
     {
         TilePosition best = TilePositions::None;
         double distance = std::numeric_limits<double>::max();
@@ -103,14 +127,23 @@ TilePosition PersonaBot::buildTile(UnitType type) const
 
 bool PersonaBot::build(UnitType type)
 {
-    if (buildTask_.workerId >= 0 || !Broodwar->canMake(type)) return false;
+    if (!Broodwar->canMake(type)) return false;
+    const auto producer = type.whatBuilds().first;
+    if (type.isAddon() || (type.getRace() == Races::Zerg && producer.isBuilding()))
+    {
+        for (auto unit : Broodwar->self()->getUnits())
+            if (unit->getType() == producer && unit->isCompleted() && unit->isIdle() && Broodwar->canMake(type, unit))
+                return type.isAddon() ? unit->buildAddon(type) : unit->morph(type);
+        return false;
+    }
+    if (buildTask_.workerId >= 0) return false;
     const auto tile = buildTile(type);
     if (!tile.isValid()) return false;
     Unit worker = nullptr; // BWAPI-owned non-owning handle.
     int bestDistance = std::numeric_limits<int>::max();
     for (auto candidate : Broodwar->self()->getUnits())
     {
-        if (candidate->getType() != UnitTypes::Zerg_Drone || !candidate->isCompleted() ||
+        if (candidate->getType() != producer || !candidate->isCompleted() || candidate->getID() == scoutWorkerId_ ||
             candidate->isMorphing() || candidate->isConstructing() || candidate->isGatheringGas()) continue;
         const int distance = candidate->getDistance(Position(tile));
         if (distance < bestDistance && candidate->hasPath(Position(tile)))
@@ -119,8 +152,9 @@ bool PersonaBot::build(UnitType type)
             bestDistance = distance;
         }
     }
+    const int expected = count(type) + 1;
     if (!worker || !worker->build(type, tile)) return false;
-    buildTask_ = {worker->getID(), Broodwar->getFrameCount()};
+    buildTask_ = {worker->getID(), Broodwar->getFrameCount(), type.getID(), expected};
     return true;
 }
 
@@ -129,8 +163,9 @@ void PersonaBot::economy()
     if (buildTask_.workerId >= 0)
     {
         auto worker = Broodwar->getUnit(buildTask_.workerId);
-        if (!worker || !worker->exists() || worker->getType() != UnitTypes::Zerg_Drone ||
-            Broodwar->getFrameCount() - buildTask_.issuedFrame > 600)
+        if (!worker || !worker->exists() || !worker->getType().isWorker() ||
+            (worker->getType().getRace() != Races::Terran && count(UnitType(buildTask_.typeId)) >= buildTask_.expectedCount) ||
+            (Broodwar->getFrameCount() - buildTask_.issuedFrame > 600 && !worker->isConstructing()))
             buildTask_ = {};
     }
     // Assign at most one new gas worker per tick; count units already en route.
@@ -140,12 +175,13 @@ void PersonaBot::economy()
         int assigned = 0;
         for (auto worker : Broodwar->self()->getUnits())
             if (worker->getType().isWorker() &&
-                (worker->getTarget() == refinery || worker->getOrderTarget() == refinery || worker->isGatheringGas()))
+                (worker->getTarget() == refinery || worker->getOrderTarget() == refinery ||
+                 (worker->isGatheringGas() && worker->getDistance(refinery) < 128)))
                 ++assigned;
         if (assigned < 3)
         {
             for (auto worker : Broodwar->self()->getUnits())
-                if (worker->getType() == UnitTypes::Zerg_Drone && worker->isCompleted() &&
+                if (worker->getType().isWorker() && worker->isCompleted() && worker->getID() != scoutWorkerId_ &&
                     worker->getID() != buildTask_.workerId && !worker->isConstructing() &&
                     !worker->isMorphing() && !worker->isGatheringGas() && !worker->isCarryingGas() &&
                     worker->getTarget() != refinery && worker->getOrderTarget() != refinery)
@@ -154,8 +190,16 @@ void PersonaBot::economy()
     }
     for (auto worker : Broodwar->self()->getUnits())
     {
-        if (worker->getType() != UnitTypes::Zerg_Drone || !worker->isIdle() ||
+        if (!worker->getType().isWorker() || !worker->isIdle() || worker->getID() == scoutWorkerId_ ||
             worker->getID() == buildTask_.workerId) continue;
+        if (worker->getType() == UnitTypes::Terran_SCV)
+        {
+            bool resumed = false;
+            for (auto building : Broodwar->self()->getUnits())
+                if (building->getType().isBuilding() && !building->isCompleted() && !building->getBuildUnit())
+                    if (worker->rightClick(building)) { resumed = true; break; }
+            if (resumed) continue;
+        }
         if (worker->isCarryingMinerals() || worker->isCarryingGas())
         {
             worker->returnCargo();
@@ -243,6 +287,178 @@ void PersonaBot::onUnitShow(Unit unit)
         enemyBuildings_.push_back(position);
 }
 
+bool PersonaBot::validateProfile() const
+{
+    const auto race = Broodwar->self()->getRace();
+    for (const auto& weight : config_.weights)
+    {
+        const UnitType type(weight.id);
+        if (type.getID() != weight.id || type.isBuilding() || type.isHero() || type.getRace() != race) return false;
+    }
+    for (const auto& step : config_.steps)
+    {
+        if (step.kind == 0)
+        {
+            const UnitType type(step.id);
+            if (type.getID() != step.id || !type.isBuilding() || type.getRace() != race) return false;
+        }
+        else if (step.kind == 1)
+        {
+            const TechType tech(step.id);
+            if (tech.getID() != step.id || tech.getRace() != race) return false;
+        }
+        else
+        {
+            const UpgradeType upgrade(step.id);
+            if (upgrade.getID() != step.id || upgrade.getRace() != race) return false;
+        }
+    }
+    return true;
+}
+
+void PersonaBot::recordStructure(Unit unit)
+{
+    if (!active_ || !unit || unit->getPlayer() != Broodwar->self() || !unit->getType().isBuilding()) return;
+    const int type = unit->getType().getID();
+    const auto previous = knownStructureTypes_.find(unit->getID());
+    if (previous == knownStructureTypes_.end() || previous->second != type)
+    {
+        ++structureCounts_[type];
+        knownStructureTypes_[unit->getID()] = type;
+    }
+}
+
+void PersonaBot::onUnitCreate(Unit unit) { recordStructure(unit); }
+void PersonaBot::onUnitMorph(Unit unit) { recordStructure(unit); }
+
+bool PersonaBot::requirementsMet(UnitType type) const
+{
+    const auto self = Broodwar->self();
+    for (const auto& requirement : type.requiredUnits())
+    {
+        int completed = self->completedUnitCount(requirement.first);
+        if (requirement.first == UnitTypes::Zerg_Hatchery)
+            completed += self->completedUnitCount(UnitTypes::Zerg_Lair) + self->completedUnitCount(UnitTypes::Zerg_Hive);
+        if (requirement.first == UnitTypes::Zerg_Lair) completed += self->completedUnitCount(UnitTypes::Zerg_Hive);
+        if (completed < requirement.second) return false;
+    }
+    const auto tech = type.requiredTech();
+    return tech == TechTypes::None || self->hasResearched(tech);
+}
+
+bool PersonaBot::make(UnitType type)
+{
+    if (type.isBuilding()) return build(type);
+    const auto producer = type.whatBuilds().first;
+    for (auto unit : Broodwar->self()->getUnits())
+    {
+        if (unit->getType() != producer || !unit->isCompleted() || unit->isMorphing() ||
+            (producer.isBuilding() && !unit->isIdle()) || !Broodwar->canMake(type, unit)) continue;
+        return type.getRace() == Races::Zerg ? unit->morph(type) : unit->train(type);
+    }
+    return false;
+}
+
+void PersonaBot::imitationProduction()
+{
+    const auto self = Broodwar->self();
+    const auto workerType = self->getRace().getWorker();
+    const auto supplyType = self->getRace().getSupplyProvider();
+    const int frame = Broodwar->getFrameCount();
+    if (count(workerType) == 0) { make(workerType); return; }
+    int pendingSupply = 0;
+    for (auto unit : self->getUnits())
+    {
+        if (unit->getType() == supplyType && !unit->isCompleted()) pendingSupply += supplyType.supplyProvided();
+        else if (unit->isMorphing() && unit->getBuildType() == supplyType) pendingSupply += supplyType.supplyProvided();
+    }
+    if (self->supplyTotal() < 400 && self->supplyTotal() + pendingSupply - self->supplyUsed() <= 4)
+    {
+        make(supplyType);
+        return;
+    }
+    for (std::size_t i = 0; i < config_.steps.size(); ++i)
+    {
+        const auto& step = config_.steps[i];
+        if (finishedSteps_[i] || frame < step.frame) continue;
+        if (step.kind == 0)
+        {
+            const UnitType type(step.id);
+            if (structureCounts_[step.id] >= step.count) { finishedSteps_[i] = true; continue; }
+            if (!requirementsMet(type)) continue;
+            // Let an already-issued worker build reach the site before spending its resources.
+            if (buildTask_.workerId >= 0) return;
+            if (make(type)) return;
+            if (self->minerals() < type.mineralPrice() || self->gas() < type.gasPrice())
+            {
+                // Do not reserve unavailable gas forever on a failed refinery/empty map.
+                if (self->gas() >= type.gasPrice() || self->completedUnitCount(self->getRace().getRefinery()) > 0)
+                    return;
+            }
+        }
+        else if (step.kind == 1)
+        {
+            const TechType tech(step.id);
+            if (self->hasResearched(tech)) { finishedSteps_[i] = true; continue; }
+            if (self->isResearching(tech)) continue;
+            for (auto unit : self->getUnits())
+                if (unit->isCompleted() && Broodwar->canResearch(tech, unit) && unit->research(tech)) return;
+        }
+        else
+        {
+            const UpgradeType upgrade(step.id);
+            if (self->getUpgradeLevel(upgrade) >= step.count) { finishedSteps_[i] = true; continue; }
+            if (self->isUpgrading(upgrade)) continue;
+            for (auto unit : self->getUnits())
+                if (unit->isCompleted() && Broodwar->canUpgrade(upgrade, unit) && unit->upgrade(upgrade)) return;
+        }
+    }
+    // Reavers/carriers require ammunition. This is a shared execution rule.
+    for (auto unit : self->getUnits())
+    {
+        if (!unit->isCompleted()) continue;
+        if (unit->getType() == UnitTypes::Protoss_Reaver && unit->getScarabCount() < 5 && unit->getTrainingQueue().empty())
+            if (unit->train(UnitTypes::Protoss_Scarab)) return;
+        if (unit->getType() == UnitTypes::Protoss_Carrier && unit->getInterceptorCount() < 4 && unit->getTrainingQueue().empty())
+            if (unit->train(UnitTypes::Protoss_Interceptor)) return;
+    }
+    std::vector<int> legal;
+    for (const auto& entry : config_.weights)
+    {
+        const UnitType type(entry.id);
+        if (std::find(legal.begin(), legal.end(), entry.id) != legal.end() ||
+            (type.isWorker() && count(type) >= config_.workerTarget)) continue;
+        for (auto producer : self->getUnits())
+            if (producer->getType() == type.whatBuilds().first && producer->isCompleted() && !producer->isMorphing() &&
+                (!producer->getType().isBuilding() || producer->isIdle()) && Broodwar->canMake(type, producer))
+            { legal.push_back(entry.id); break; }
+    }
+    const int selected = config_.chooseUnit(frame, legal, random_);
+    if (selected >= 0) make(UnitType(selected));
+}
+
+void PersonaBot::scout()
+{
+    if (config_.schemaVersion != 2 || searchLocations_.empty() || Broodwar->getFrameCount() < 2400) return;
+    if (scoutWorkerId_ >= 0)
+    {
+        auto worker = Broodwar->getUnit(scoutWorkerId_);
+        if (!worker || !worker->exists()) { scoutWorkerId_ = -2; return; }
+        if (!enemyBuildings_.empty() || scoutIndex_ >= searchLocations_.size())
+        { worker->stop(); scoutWorkerId_ = -2; return; }
+        if (Broodwar->isExplored(searchLocations_[scoutIndex_])) { ++scoutIndex_; return; }
+        const Position target = Position(searchLocations_[scoutIndex_]) + Position(64, 48);
+        if (worker->isIdle() || Broodwar->getFrameCount() - worker->getLastCommandFrame() >= 96) worker->move(target);
+    }
+    else if (scoutWorkerId_ == -1 && count(Broodwar->self()->getRace().getWorker()) >= 8)
+    {
+        for (auto worker : Broodwar->self()->getUnits())
+            if (worker->getType().isWorker() && worker->isCompleted() && !worker->isConstructing() &&
+                !worker->isGatheringGas() && worker->getID() != buildTask_.workerId)
+            { scoutWorkerId_ = worker->getID(); break; }
+    }
+}
+
 Position PersonaBot::attackTarget()
 {
     // Remove stale sightings only after the location becomes visible again.
@@ -265,9 +481,15 @@ void PersonaBot::army()
 {
     Unitset combat;
     for (auto unit : Broodwar->self()->getUnits())
-        if (unit->isCompleted() && (unit->getType() == UnitTypes::Zerg_Zergling ||
-                                   unit->getType() == UnitTypes::Zerg_Hydralisk)) combat.insert(unit);
-    if (static_cast<int>(combat.size()) >= config_.attackUnits) attacking_ = true;
+        if (unit->isCompleted() && !unit->getType().isBuilding() && !unit->getType().isWorker() &&
+            (unit->getType().canAttack() || unit->getType() == UnitTypes::Protoss_High_Templar ||
+             unit->getType() == UnitTypes::Protoss_Observer || unit->getType() == UnitTypes::Terran_Medic ||
+             unit->getType() == UnitTypes::Terran_Science_Vessel)) combat.insert(unit);
+    if (config_.schemaVersion == 2)
+    {
+        if (Broodwar->getFrameCount() >= config_.firstAttackFrame && combat.size() >= 4) attacking_ = true;
+    }
+    else if (static_cast<int>(combat.size()) >= config_.attackUnits) attacking_ = true;
     if (combat.size() < 4) attacking_ = false;
     Position target = Positions::None;
     for (auto enemy : Broodwar->getAllUnits())
@@ -280,9 +502,27 @@ void PersonaBot::army()
     if (!target.isValid() && attacking_) target = attackTarget();
     if (!target.isValid()) return;
     for (auto unit : combat)
-        if (!unit->isAttackFrame() && (unit->isIdle() ||
-            Broodwar->getFrameCount() - unit->getLastCommandFrame() >= 48))
-            unit->attack(target);
+    {
+        if (unit->isAttackFrame() || Broodwar->getFrameCount() - unit->getLastCommandFrame() < 48) continue;
+        Unit nearby = nullptr;
+        int nearbyCount = 0;
+        for (auto enemy : Broodwar->getAllUnits())
+            if (enemy->isVisible() && enemy->getPlayer()->isEnemy(Broodwar->self()) && !enemy->isFlying() &&
+                unit->getDistance(enemy) < 224) { nearby = enemy; ++nearbyCount; }
+        if (unit->getType() == UnitTypes::Zerg_Lurker)
+        {
+            if (nearby && !unit->isBurrowed()) { unit->burrow(); continue; }
+            if (!nearby && unit->isBurrowed()) { unit->unburrow(); continue; }
+        }
+        if (unit->getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode && nearby &&
+            Broodwar->self()->hasResearched(TechTypes::Tank_Siege_Mode)) { unit->siege(); continue; }
+        if (unit->getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && !nearby) { unit->unsiege(); continue; }
+        if (unit->getType() == UnitTypes::Protoss_High_Templar && nearbyCount >= 3 && unit->getEnergy() >= 75 &&
+            Broodwar->self()->hasResearched(TechTypes::Psionic_Storm))
+        { if (unit->useTech(TechTypes::Psionic_Storm, nearby->getPosition())) continue; }
+        if (unit->getType().canAttack()) unit->attack(target);
+        else if (unit->getDistance(target) > 160) unit->move(target);
+    }
 }
 
 void PersonaBot::onFrame()
@@ -291,7 +531,9 @@ void PersonaBot::onFrame()
     Broodwar->drawTextScreen(8, 8, "Persona: %s | samples %d | prototype", config_.name.c_str(), config_.sampleGames);
     if (Broodwar->getFrameCount() % std::max(6, Broodwar->getLatencyFrames()) != 0) return;
     economy();
-    production();
+    scout();
+    if (config_.schemaVersion == 2) imitationProduction();
+    else production();
     army();
 }
 

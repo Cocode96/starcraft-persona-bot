@@ -47,6 +47,24 @@ int main(int argc, char** argv)
         oversized.replace(oversized.find("worker_target=24"), 16, "worker_target=81");
         std::istringstream input(oversized);
         require(!config.load(input, error), "unsafe worker count accepted");
+        const std::string imitation = "schema_version=2\nname=Test\nrace=Protoss\nsample_games=8\nseed=42\n"
+            "worker_target=30\nfirst_attack_frame=6000\nstep=1000,0,156,1\nstep=2000,0,160,1\n"
+            "weight=0,65,9000\nweight=0,66,1000\nweight=1,66,10000\nweight=2,65,10000\nweight=3,66,10000\n";
+        std::istringstream current(imitation);
+        require(config.load(current, error), "schema 2 rejected");
+        std::mt19937 random(42);
+        int zealots = 0;
+        for (int i = 0; i < 10000; ++i) zealots += config.chooseUnit(0, {65, 66}, random) == 65;
+        require(zealots > 8700 && zealots < 9300, "learned distribution not respected");
+        require(config.chooseUnit(0, {66}, random) == 66, "illegal choice escaped mask");
+        require(config.chooseUnit(4320, {65, 66}, random) == 66, "phase boundary mismatch");
+        require(config.chooseUnit(0, {}, random) == -1, "empty action set not handled");
+        for (const auto& suffix : {"weight=0,65,12\n", "step=1,0,156,1\n", "step=\n", "weight=0,999,1\n"})
+        {
+            std::istringstream invalid(imitation + suffix);
+            require(!config.load(invalid, error), "invalid imitation profile accepted");
+            require(config.race == "Protoss" && config.steps.size() == 2, "failed schema 2 load mutated state");
+        }
         std::cout << "Profile config contract validated\n";
     }
     catch (const std::exception& error)
