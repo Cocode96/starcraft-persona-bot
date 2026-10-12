@@ -108,6 +108,26 @@ def audit_player(folder):
         blocked_samples += blocked
         run = run + 1 if blocked else 0
         longest_run = max(longest_run, run)
+    facilities = [tuple(map(int, row)) for row in rows(root / 'facilities.tsv')]
+    capacity_additions = []
+    for request in rows(root / 'capacity-plans.tsv'):
+        requested = int(request[0])
+        tile = tuple(map(int, request[5:7]))
+        # A build task expires after 1200 frames. A later rebuild at the same
+        # location must not turn an expired request into successful evidence.
+        created = next((row for row in structures if row[2] == 160 and row[3:5] == tile
+                        and requested <= row[0] <= requested + 1200), None)
+        training = None
+        if created:
+            destroyed = next((int(row[0]) for row in deaths
+                              if int(row[1]) == created[1] and int(row[0]) >= created[0]), None)
+            training = next((row[0] for row in facilities
+                             if row[1] == created[1] and row[2] == 160 and row[0] >= created[0]
+                             and (destroyed is None or row[0] < destroyed)
+                             and row[3] and row[4] and row[6] > 0), None)
+        capacity_additions.append({'request_frame': requested, 'tile': tile,
+                                   'created_frame': created[0] if created else None,
+                                   'first_training_sample': training})
     return {
         'observed_frame': frame,
         'state': 'issues_found' if findings else 'incomplete' if frame < 9000 or not finished else 'checks_passed',
@@ -120,6 +140,8 @@ def audit_player(folder):
         'final_status': status[-1] if status else None,
         'test_limit_reached': (root / 'test-limit.txt').is_file(),
         'casters': caster_report,
+        'capacity': {'gateway_additions': capacity_additions,
+                     'scope': 'Requests, observed creation and training samples; not completed unit output or personal build fidelity.'},
         'supply': {'samples': len(supply_samples), 'blocked_samples': blocked_samples,
                    'longest_blocked_run_samples': longest_run,
                    'scope': 'Sampled capacity after frame 6000 with surviving workers and below 200 supply; not exact blocked duration.'},

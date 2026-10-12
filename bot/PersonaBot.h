@@ -79,6 +79,7 @@ private:
     std::vector<Placement> placements_;
     std::map<std::pair<int, int>, int> failedBuildSites_;
     int lastMacroHatchFrame_ = -1200;
+    int lastMacroGatewayFrame_ = -1200;
     int testMaxFrames_ = 0;
     int lastEnemyBaseSeenFrame_ = -10000;
     int retreatUntil_ = 0;

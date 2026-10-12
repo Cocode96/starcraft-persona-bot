@@ -5,6 +5,31 @@ from scripts.audit_match import audit_player
 
 
 class RuntimeAuditTests(unittest.TestCase):
+    def test_capacity_request_needs_creation_and_live_training_evidence(self):
+        with tempfile.TemporaryDirectory() as root:
+            write = Path(root) / 'bwapi-data/write'
+            write.mkdir(parents=True)
+            (write / 'capacity-plans.tsv').write_text(
+                '15000\t5\t5\t1800\t24\t10\t20\n'
+                '18000\t6\t6\t1800\t24\t30\t40\n'
+                '21000\t7\t7\t1800\t24\t50\t60\n')
+            (write / 'structure-events.tsv').write_text(
+                '15100\t10\t160\t10\t20\n'
+                '20000\t11\t160\t30\t40\n'
+                '21100\t12\t160\t50\t60\n')
+            (write / 'unit-deaths.tsv').write_text('22000\t12\t160\t50\t60\n')
+            (write / 'facilities.tsv').write_text(
+                '16000\t10\t160\t1\t0\t1\t0\n'
+                '16800\t10\t160\t1\t1\t0\t1\n'
+                '22200\t12\t160\t1\t1\t0\t1\n')
+            additions = audit_player(root)['capacity']['gateway_additions']
+            self.assertEqual(additions[0]['created_frame'], 15100)
+            self.assertEqual(additions[0]['first_training_sample'], 16800)
+            self.assertIsNone(additions[1]['created_frame'])
+            self.assertIsNone(additions[1]['first_training_sample'])
+            self.assertEqual(additions[2]['created_frame'], 21100)
+            self.assertIsNone(additions[2]['first_training_sample'])
+
     def test_supply_samples_exclude_opening_full_cap_and_elimination(self):
         with tempfile.TemporaryDirectory() as root:
             write = Path(root) / 'bwapi-data/write'

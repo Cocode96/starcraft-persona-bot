@@ -1,5 +1,6 @@
 #include "PersonaBot.h"
 #include "SupplyPolicy.h"
+#include "ProductionPolicy.h"
 
 #include <algorithm>
 #include <fstream>
@@ -30,12 +31,14 @@ void PersonaBot::onStart()
     placements_.clear();
     failedBuildSites_.clear();
     lastMacroHatchFrame_ = -1200;
+    lastMacroGatewayFrame_ = -1200;
     testMaxFrames_ = 0;
     lastEnemyBaseSeenFrame_ = -10000;
     retreatUntil_ = 0;
     lastStormFrame_ = -1000;
     lastStormPosition_ = Positions::None;
     stance_ = TacticalPolicy::Stance::Gather;
+    std::ofstream("bwapi-data/write/game-seed.txt") << Broodwar->getRandomSeed() << '\n';
     if (Broodwar->isReplay())
     {
         Broodwar->setLocalSpeed(42);
@@ -864,6 +867,38 @@ void PersonaBot::imitationProduction()
         for (const auto& entry : config_.weights)
             if (entry.phase == phase && entry.weight >= 100 && !UnitType(entry.id).isWorker() &&
                 !requirementsMet(UnitType(entry.id)) && prepareRequirements(UnitType(entry.id))) return;
+    }
+    if (self->getRace() == Races::Protoss && frame % 120 == 0 && buildTask_.workerId < 0)
+    {
+        ProductionPolicy::Capacity capacity;
+        capacity.frame = frame;
+        capacity.lastAddition = lastMacroGatewayFrame_;
+        capacity.minerals = self->minerals();
+        capacity.freeSupply = self->supplyTotal() - self->supplyUsed();
+        for (auto unit : self->getUnits())
+            if (unit->getType() == UnitTypes::Protoss_Gateway)
+            {
+                if (!unit->isCompleted()) ++capacity.incomplete;
+                else if (unit->isPowered())
+                { ++capacity.completed; if (unit->isTraining()) ++capacity.busy; }
+            }
+        for (const auto& step : config_.steps)
+            if (step.kind == 0 && step.id == UnitTypes::Protoss_Gateway.getID())
+                capacity.planned = std::max(capacity.planned, step.count);
+        for (const auto& entry : config_.weights)
+        {
+            const UnitType type(entry.id);
+            if (entry.phase == 3 && entry.weight > 0 && type.whatBuilds().first == UnitTypes::Protoss_Gateway &&
+                requirementsMet(type) && self->gas() >= type.gasPrice()) capacity.affordableUnit = true;
+        }
+        if (ProductionPolicy::addGateway(capacity) && build(UnitTypes::Protoss_Gateway))
+        {
+            lastMacroGatewayFrame_ = frame;
+            std::ofstream("bwapi-data/write/capacity-plans.tsv", std::ios::app)
+                << frame << '\t' << capacity.completed << '\t' << capacity.busy << '\t' << capacity.minerals
+                << '\t' << capacity.freeSupply << '\t' << buildTask_.tile.x << '\t' << buildTask_.tile.y << '\n';
+            return;
+        }
     }
     // Execution fallback: when existing hatcheries cannot spend the bank, add
     // production. This is a shared rule, not a learned personal preference.
