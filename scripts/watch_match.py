@@ -107,6 +107,7 @@ def main():
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--legacy-profile", action="store_true", help="Use the old historical deployment instead of current-period data")
     parser.add_argument("--map", default=DEFAULT_MAP)
+    parser.add_argument('--seed', type=int, default=42, help='Recorded seed for opening selection and unit choices')
     parser.add_argument('--fast-test', action='store_true', help='Disable rendering and run as fast as possible')
     parser.add_argument('--max-frames', type=int, default=0, help='End the test match at this frame (0 = full match)')
     args = parser.parse_args()
@@ -114,6 +115,8 @@ def main():
         parser.error("speed must be 0..200")
     if not 0 <= args.max_frames <= 432000:
         parser.error('max-frames must be 0..432000')
+    if not 0 <= args.seed <= 2147483647:
+        parser.error('seed must be 0..2147483647')
     if not args.prepare_only:
         require_no_game()
     roster = json.loads((ROOT / "dist/players/roster.json").read_text(encoding="utf-8"))
@@ -143,7 +146,8 @@ def main():
             from persona.temporal import build_current, export_current, export_placements
             document = json.loads((ROOT / "data/replays-v2.json").read_text(encoding="utf-8"))
             model = build_current(document, person['nickname'], person['race'], people[1-index]['race'],
-                                  'Fighting Spirit' if 'FightingSpirit' in args.map else Path(args.map).stem)
+                                  'Fighting Spirit' if 'FightingSpirit' in args.map else Path(args.map).stem,
+                                  seed=args.seed)
             profile = folder / 'bwapi-data/read/persona.ini'
             export_current(model, profile)
             export_current(model, profile.with_name(f"persona-{people[1-index]['race']}.ini"))
@@ -156,6 +160,7 @@ def main():
     manifest = {"session": str(session), "people": [p["nickname"] for p in people],
                 "folders": [str(f) for f in folders], "speed": args.speed, "map": args.map,
                 "fast_test": args.fast_test, "max_frames": args.max_frames,
+                "seed": args.seed,
                 "dll_sha256": hashlib.sha256((folders[0] / 'bwapi-data/AI/PersonaBot.dll').read_bytes()).hexdigest()}
     (session / "match.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (ROOT / "dist/last-match.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")

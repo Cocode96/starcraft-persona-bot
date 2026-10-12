@@ -7,6 +7,7 @@ from collections import Counter
 import json
 from pathlib import Path
 import re
+import random
 from statistics import median
 
 from .imitation import fit_model, phase, samples_for, timestamp, SUPPORTED_UNITS, WORKERS
@@ -59,7 +60,25 @@ def recency_weight(sample, latest):
     return 2 ** (-days / HALF_LIFE_DAYS)
 
 
-def build_current(document, name, race, opponent, target_map='Fighting Spirit'):
+def choose_opening(candidates, latest, seed):
+    """Sample whole observed openings, so repeated choices retain their frequency.
+
+    No guessed 9-pool/12-hatch labels or synthetic mixture of build timings.
+    Sorting and a local RNG make a recorded seed reproducible.
+    """
+    ordered = sorted(candidates, key=lambda s: (timestamp(s['start_time']), s['match_id']))
+    if not ordered:
+        raise ValueError('No opening candidates')
+    weights = [recency_weight(sample, latest) for sample in ordered]
+    total = sum(weights)
+    selected = random.Random(seed).choices(ordered, weights=weights, k=1)[0]
+    evidence = [{'match_id': sample['match_id'], 'start_time': sample['start_time'],
+                 'map': sample['map'], 'probability': weight / total}
+                for sample, weight in zip(ordered, weights)]
+    return selected, evidence
+
+
+def build_current(document, name, race, opponent, target_map='Fighting Spirit', seed=42):
     all_samples = samples_for(document, name, race)
     recent = current_period(all_samples)
     if not recent:
@@ -69,11 +88,11 @@ def build_current(document, name, race, opponent, target_map='Fighting Spirit'):
         raise ValueError(f'No {opponent} matchup in current period for {name}; refusing an old opening silently')
     same_map = [s for s in matchup if map_family(s['map']) == map_family(target_map)]
     candidates = same_map or matchup
-    selected = candidates[-1]
     # Actual recent games condition the policy. Sparse exact-map samples back off
     # to the SAME player's current-period matchup, never a different person.
     policy_samples = same_map if len(same_map) >= 3 else matchup
     latest = max(timestamp(s['start_time']) for s in recent)
+    selected, opening_candidates = choose_opening(candidates, latest, seed)
     model = fit_model(recent, name, race)
     policies = []
     for index in range(4):
@@ -101,6 +120,8 @@ def build_current(document, name, race, opponent, target_map='Fighting Spirit'):
         'evaluation': 'Deployment uses latest observations. Historical held-out scores do not evaluate this refit.',
         'skill_trend_assumption': 'none',
         'production_evidence': 'Producer build-time filtered command opportunities; not successful unit counts.',
+        'opening_selection': 'Whole observed game sampled by frequency and recency within map/matchup candidates.',
+        'seed': seed, 'opening_candidates': opening_candidates,
     }
     model['selected_events'] = selected['player']['events']
     attacks = [s['player']['first_distant_attack_command_frame'] for s in policy_samples
@@ -110,7 +131,8 @@ def build_current(document, name, race, opponent, target_map='Fighting Spirit'):
     return model
 
 
-def export_current(model, output, seed=42):
+def export_current(model, output):
+    seed = model['context'].get('seed', 42)
     race = model['race']
     counts = Counter({WORKERS[race]: 4})
     if race == 'Zerg':
@@ -198,9 +220,12 @@ def main():
     parser.add_argument('--map', default='Fighting Spirit')
     parser.add_argument('--input', default='data/replays-v2.json')
     parser.add_argument('--output', required=True)
+    parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
+    if not 0 <= args.seed <= 2147483647:
+        parser.error('seed must be 0..2147483647')
     document = json.loads(Path(args.input).read_text(encoding='utf-8'))
-    model = build_current(document, args.name, args.race, args.opponent, args.map)
+    model = build_current(document, args.name, args.race, args.opponent, args.map, args.seed)
     export_current(model, args.output)
     print(json.dumps(model['context'], ensure_ascii=False, indent=2))
 
