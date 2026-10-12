@@ -44,7 +44,7 @@ def prepare_runtime():
     return runtime
 
 
-def configuration(name, race, host, speed, replay=None, map_path=DEFAULT_MAP):
+def configuration(name, race, host, speed, replay=None, map_path=DEFAULT_MAP, game_seed=None):
     return f"""[ai]
 ai = bwapi-data/AI/PersonaBot.dll
 ai_dbg = bwapi-data/AI/PersonaBot.dll
@@ -79,6 +79,7 @@ height = 480
 sound = {'ON' if host else 'OFF'}
 speed_override = {speed}
 drop_players = OFF
+{f'seed_override = {game_seed}' if host and not replay and game_seed is not None else ''}
 """
 
 
@@ -110,6 +111,7 @@ def main():
     parser.add_argument("--legacy-profile", action="store_true", help="Use the old historical deployment instead of current-period data")
     parser.add_argument("--map", default=DEFAULT_MAP)
     parser.add_argument('--seed', type=int, default=42, help='Recorded seed for opening selection and unit choices')
+    parser.add_argument('--game-seed', type=int, help='Optional BWAPI game seed, separate from personal model selection')
     parser.add_argument('--fast-test', action='store_true', help='Disable rendering and run as fast as possible')
     parser.add_argument('--max-frames', type=int, default=0, help='End the test match at this frame (0 = full match)')
     args = parser.parse_args()
@@ -119,6 +121,8 @@ def main():
         parser.error('max-frames must be 0..432000')
     if not 0 <= args.seed <= 2147483647:
         parser.error('seed must be 0..2147483647')
+    if args.game_seed is not None and not 0 <= args.game_seed <= 2147483647:
+        parser.error('game-seed must be 0..2147483647')
     if not args.prepare_only:
         require_no_game()
     roster = json.loads((ROOT / "dist/players/roster.json").read_text(encoding="utf-8"))
@@ -157,12 +161,14 @@ def main():
             subprocess.run([str(ROOT / 'build/Release/model_contract_tests.exe'), str(profile)], check=True)
         (folder / "maps/replays").mkdir(exist_ok=True)
         (folder / "bwapi-data/bwapi.ini").write_text(
-            configuration(person["nickname"], person["race"], index == 0, args.speed, map_path=args.map), encoding="ascii")
+            configuration(person["nickname"], person["race"], index == 0, args.speed,
+                          map_path=args.map, game_seed=args.game_seed), encoding="ascii")
         folders.append(folder)
     manifest = {"session": str(session), "people": [p["nickname"] for p in people],
                 "folders": [str(f) for f in folders], "speed": args.speed, "map": args.map,
                 "fast_test": args.fast_test, "max_frames": args.max_frames,
                 "seed": args.seed,
+                "game_seed": args.game_seed,
                 "dll_sha256": hashlib.sha256((folders[0] / 'bwapi-data/AI/PersonaBot.dll').read_bytes()).hexdigest()}
     (session / "match.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (ROOT / "dist/last-prepared-match.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
