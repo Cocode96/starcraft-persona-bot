@@ -1,4 +1,5 @@
 #include "PersonaBot.h"
+#include "SupplyPolicy.h"
 
 #include <algorithm>
 #include <fstream>
@@ -826,11 +827,34 @@ void PersonaBot::imitationProduction()
         if (unit->getType() == supplyType && !unit->isCompleted()) pendingSupply += supplyType.supplyProvided();
         else if (unit->isMorphing() && unit->getBuildType() == supplyType) pendingSupply += supplyType.supplyProvided();
     }
-    if (self->supplyTotal() < 400 && self->supplyTotal() + pendingSupply - self->supplyUsed() <= 4)
+    const bool recordedOpening = config_.schemaVersion >= 3 && frame <= config_.openingEndFrame;
+    int supplyBuffer = 4;
+    if (self->getRace() == Races::Protoss)
+    {
+        int producers = 0, nexuses = 0;
+        for (auto unit : self->getUnits())
+        {
+            if (!unit->isCompleted() || !unit->isPowered()) continue;
+            const auto type = unit->getType();
+            if (type == UnitTypes::Protoss_Nexus) ++nexuses;
+            if (type == UnitTypes::Protoss_Gateway || type == UnitTypes::Protoss_Robotics_Facility ||
+                type == UnitTypes::Protoss_Stargate) ++producers;
+        }
+        supplyBuffer = SupplyPolicy::protossBuffer(recordedOpening, producers, nexuses);
+    }
+    if (SupplyPolicy::needsProvider(self->supplyUsed(), self->supplyTotal(), pendingSupply, supplyBuffer))
     {
         // During recorded openings only recover a real supply block, preserving observed supply timing.
-        if (config_.schemaVersion < 3 || frame > config_.openingEndFrame || self->supplyTotal() - self->supplyUsed() <= 0)
-        { if (make(supplyType)) return; }
+        if (!recordedOpening || self->supplyTotal() - self->supplyUsed() <= 0)
+        {
+            if (make(supplyType))
+            {
+                std::ofstream("bwapi-data/write/supply-plans.tsv", std::ios::app)
+                    << frame << '\t' << self->supplyUsed() << '\t' << self->supplyTotal()
+                    << '\t' << pendingSupply << '\t' << supplyBuffer << '\n';
+                return;
+            }
+        }
     }
     if (openingProduction()) return;
     if (executeDueResearch()) return;

@@ -5,6 +5,23 @@ from scripts.audit_match import audit_player
 
 
 class RuntimeAuditTests(unittest.TestCase):
+    def test_supply_samples_exclude_opening_full_cap_and_elimination(self):
+        with tempfile.TemporaryDirectory() as root:
+            write = Path(root) / 'bwapi-data/write'
+            write.mkdir(parents=True)
+            (write / 'live-status.tsv').write_text(
+                'frame\tworkers\tarmy\tbuildings\tminerals\tgas\tbuilder\tbuild_type\tsupply_used\tsupply_total\n'
+                '6000\t20\t8\t4\t200\t100\t-1\t-1\t60\t60\n'
+                '6240\t20\t8\t4\t200\t100\t-1\t-1\t60\t60\n'
+                '6480\t20\t8\t4\t200\t100\t-1\t-1\t60\t60\n'
+                '6720\t20\t8\t4\t200\t100\t-1\t-1\t60\t76\n'
+                '6960\t20\t8\t4\t200\t100\t-1\t-1\t400\t400\n'
+                '7200\t0\t8\t4\t200\t100\t-1\t-1\t60\t60\n')
+            report = audit_player(root)['supply']
+            self.assertEqual(report['samples'], 3)
+            self.assertEqual(report['blocked_samples'], 2)
+            self.assertEqual(report['longest_blocked_run_samples'], 2)
+
     def test_missing_runtime_never_passes(self):
         with tempfile.TemporaryDirectory() as root:
             report = audit_player(root)

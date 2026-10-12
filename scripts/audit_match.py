@@ -95,6 +95,19 @@ def audit_player(folder):
         findings.append('No scout assignment recorded by frame 6000.')
     if frame >= 6000 and not rallies:
         findings.append('No successful rally command recorded by frame 6000.')
+    supply_samples = [row for row in status if row['frame'] > 6000 and row['workers'] > 0
+                      and 'supply_total' in row and 'supply_used' in row and row['supply_total'] < 400]
+    blocked_samples = 0
+    longest_run = 0
+    run = 0
+    for row in status:
+        if row not in supply_samples:
+            run = 0
+            continue
+        blocked = row['supply_used'] >= row['supply_total']
+        blocked_samples += blocked
+        run = run + 1 if blocked else 0
+        longest_run = max(longest_run, run)
     return {
         'observed_frame': frame,
         'state': 'issues_found' if findings else 'incomplete' if frame < 9000 or not finished else 'checks_passed',
@@ -107,6 +120,9 @@ def audit_player(folder):
         'final_status': status[-1] if status else None,
         'test_limit_reached': (root / 'test-limit.txt').is_file(),
         'casters': caster_report,
+        'supply': {'samples': len(supply_samples), 'blocked_samples': blocked_samples,
+                   'longest_blocked_run_samples': longest_run,
+                   'scope': 'Sampled capacity after frame 6000 with surviving workers and below 200 supply; not exact blocked duration.'},
         'scope': 'Basic execution telemetry only; not wall tightness, micro quality, win rate or personal likeness.'
     }
 
