@@ -14,3 +14,6 @@ persona = "persona.cli:main"
 
 [tool.setuptools]
 packages = ["persona"]
+
+[tool.setuptools.package-data]
+persona = ["unit_types.json"]

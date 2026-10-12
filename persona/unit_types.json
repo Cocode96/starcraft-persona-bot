@@ -1,0 +1,786 @@
+{
+  "8": {
+    "name": "Terran_Wraith",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 114
+  },
+  "64": {
+    "name": "Protoss_Probe",
+    "race": "Protoss",
+    "building": false,
+    "worker": true,
+    "depot": false,
+    "producer": 154
+  },
+  "0": {
+    "name": "Terran_Marine",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 111
+  },
+  "9": {
+    "name": "Terran_Science_Vessel",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 114
+  },
+  "65": {
+    "name": "Protoss_Zealot",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 160
+  },
+  "1": {
+    "name": "Terran_Ghost",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 111
+  },
+  "66": {
+    "name": "Protoss_Dragoon",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 160
+  },
+  "2": {
+    "name": "Terran_Vulture",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 113
+  },
+  "67": {
+    "name": "Protoss_High_Templar",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 160
+  },
+  "3": {
+    "name": "Terran_Goliath",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 113
+  },
+  "69": {
+    "name": "Protoss_Shuttle",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 155
+  },
+  "5": {
+    "name": "Terran_Siege_Tank_Tank_Mode",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 113
+  },
+  "7": {
+    "name": "Terran_SCV",
+    "race": "Terran",
+    "building": false,
+    "worker": true,
+    "depot": false,
+    "producer": 106
+  },
+  "11": {
+    "name": "Terran_Dropship",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 114
+  },
+  "12": {
+    "name": "Terran_Battlecruiser",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 114
+  },
+  "14": {
+    "name": "Terran_Nuclear_Missile",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 108
+  },
+  "30": {
+    "name": "Terran_Siege_Tank_Siege_Mode",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 113
+  },
+  "32": {
+    "name": "Terran_Firebat",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 111
+  },
+  "34": {
+    "name": "Terran_Medic",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 111
+  },
+  "35": {
+    "name": "Zerg_Larva",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 131
+  },
+  "36": {
+    "name": "Zerg_Egg",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 35
+  },
+  "37": {
+    "name": "Zerg_Zergling",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 35
+  },
+  "38": {
+    "name": "Zerg_Hydralisk",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 35
+  },
+  "39": {
+    "name": "Zerg_Ultralisk",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 35
+  },
+  "41": {
+    "name": "Zerg_Drone",
+    "race": "Zerg",
+    "building": false,
+    "worker": true,
+    "depot": false,
+    "producer": 35
+  },
+  "42": {
+    "name": "Zerg_Overlord",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 35
+  },
+  "43": {
+    "name": "Zerg_Mutalisk",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 35
+  },
+  "44": {
+    "name": "Zerg_Guardian",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 43
+  },
+  "45": {
+    "name": "Zerg_Queen",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 35
+  },
+  "46": {
+    "name": "Zerg_Defiler",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 35
+  },
+  "47": {
+    "name": "Zerg_Scourge",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 35
+  },
+  "50": {
+    "name": "Zerg_Infested_Terran",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 130
+  },
+  "58": {
+    "name": "Terran_Valkyrie",
+    "race": "Terran",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 114
+  },
+  "59": {
+    "name": "Zerg_Cocoon",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 43
+  },
+  "60": {
+    "name": "Protoss_Corsair",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 167
+  },
+  "61": {
+    "name": "Protoss_Dark_Templar",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 160
+  },
+  "62": {
+    "name": "Zerg_Devourer",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 43
+  },
+  "63": {
+    "name": "Protoss_Dark_Archon",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 61
+  },
+  "68": {
+    "name": "Protoss_Archon",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 67
+  },
+  "70": {
+    "name": "Protoss_Scout",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 167
+  },
+  "71": {
+    "name": "Protoss_Arbiter",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 167
+  },
+  "72": {
+    "name": "Protoss_Carrier",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 167
+  },
+  "73": {
+    "name": "Protoss_Interceptor",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 72
+  },
+  "83": {
+    "name": "Protoss_Reaver",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 155
+  },
+  "84": {
+    "name": "Protoss_Observer",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 155
+  },
+  "85": {
+    "name": "Protoss_Scarab",
+    "race": "Protoss",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 83
+  },
+  "97": {
+    "name": "Zerg_Lurker_Egg",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 38
+  },
+  "103": {
+    "name": "Zerg_Lurker",
+    "race": "Zerg",
+    "building": false,
+    "worker": false,
+    "depot": false,
+    "producer": 38
+  },
+  "106": {
+    "name": "Terran_Command_Center",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": true,
+    "producer": 7
+  },
+  "107": {
+    "name": "Terran_Comsat_Station",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 106
+  },
+  "108": {
+    "name": "Terran_Nuclear_Silo",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 106
+  },
+  "109": {
+    "name": "Terran_Supply_Depot",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "110": {
+    "name": "Terran_Refinery",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "111": {
+    "name": "Terran_Barracks",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "112": {
+    "name": "Terran_Academy",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "113": {
+    "name": "Terran_Factory",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "114": {
+    "name": "Terran_Starport",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "115": {
+    "name": "Terran_Control_Tower",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 114
+  },
+  "116": {
+    "name": "Terran_Science_Facility",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "117": {
+    "name": "Terran_Covert_Ops",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 116
+  },
+  "118": {
+    "name": "Terran_Physics_Lab",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 116
+  },
+  "120": {
+    "name": "Terran_Machine_Shop",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 113
+  },
+  "122": {
+    "name": "Terran_Engineering_Bay",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "123": {
+    "name": "Terran_Armory",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "124": {
+    "name": "Terran_Missile_Turret",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "125": {
+    "name": "Terran_Bunker",
+    "race": "Terran",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 7
+  },
+  "131": {
+    "name": "Zerg_Hatchery",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": true,
+    "producer": 41
+  },
+  "132": {
+    "name": "Zerg_Lair",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": true,
+    "producer": 131
+  },
+  "133": {
+    "name": "Zerg_Hive",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": true,
+    "producer": 132
+  },
+  "134": {
+    "name": "Zerg_Nydus_Canal",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "135": {
+    "name": "Zerg_Hydralisk_Den",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "136": {
+    "name": "Zerg_Defiler_Mound",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "137": {
+    "name": "Zerg_Greater_Spire",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 141
+  },
+  "138": {
+    "name": "Zerg_Queens_Nest",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "139": {
+    "name": "Zerg_Evolution_Chamber",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "140": {
+    "name": "Zerg_Ultralisk_Cavern",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "141": {
+    "name": "Zerg_Spire",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "142": {
+    "name": "Zerg_Spawning_Pool",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "143": {
+    "name": "Zerg_Creep_Colony",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "144": {
+    "name": "Zerg_Spore_Colony",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 143
+  },
+  "146": {
+    "name": "Zerg_Sunken_Colony",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 143
+  },
+  "149": {
+    "name": "Zerg_Extractor",
+    "race": "Zerg",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 41
+  },
+  "154": {
+    "name": "Protoss_Nexus",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": true,
+    "producer": 64
+  },
+  "155": {
+    "name": "Protoss_Robotics_Facility",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "156": {
+    "name": "Protoss_Pylon",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "157": {
+    "name": "Protoss_Assimilator",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "159": {
+    "name": "Protoss_Observatory",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "160": {
+    "name": "Protoss_Gateway",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "162": {
+    "name": "Protoss_Photon_Cannon",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "163": {
+    "name": "Protoss_Citadel_of_Adun",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "164": {
+    "name": "Protoss_Cybernetics_Core",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "165": {
+    "name": "Protoss_Templar_Archives",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "166": {
+    "name": "Protoss_Forge",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "167": {
+    "name": "Protoss_Stargate",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "169": {
+    "name": "Protoss_Fleet_Beacon",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "170": {
+    "name": "Protoss_Arbiter_Tribunal",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "171": {
+    "name": "Protoss_Robotics_Support_Bay",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  },
+  "172": {
+    "name": "Protoss_Shield_Battery",
+    "race": "Protoss",
+    "building": true,
+    "worker": false,
+    "depot": false,
+    "producer": 64
+  }
+}
