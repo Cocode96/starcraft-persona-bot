@@ -41,6 +41,7 @@ private:
     bool build(BWAPI::UnitType type);
     BWAPI::TilePosition buildTile(BWAPI::UnitType type) const;
     void economy();
+    BWAPI::Unit mineralTarget(BWAPI::Unit worker) const;
     void planMap();
     void rally();
     BWAPI::Position assemblyPoint() const;
@@ -74,6 +75,7 @@ private:
     std::map<int, int> productionCounts_;
     std::map<int, int> gasAssignments_;
     std::map<int, int> mineralAssignments_;
+    bool gasPaused_ = false;
     std::size_t openingIndex_ = 0;
     std::vector<BWAPI::TilePosition> baseSites_;
     std::vector<Placement> placements_;

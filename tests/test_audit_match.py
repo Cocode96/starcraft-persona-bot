@@ -5,6 +5,23 @@ from scripts.audit_match import audit_player
 
 
 class RuntimeAuditTests(unittest.TestCase):
+    def test_gas_balance_reports_observation_without_claiming_mining_output(self):
+        with tempfile.TemporaryDirectory() as root:
+            write = Path(root) / 'bwapi-data/write'
+            write.mkdir(parents=True)
+            (write / 'live-status.tsv').write_text(
+                'frame\tworkers\tarmy\tbuildings\tminerals\tgas\tbuilder\tbuild_type\n'
+                '9000\t20\t8\t4\t100\t2600\t-1\t-1\n'
+                '9240\t20\t8\t4\t100\t1200\t-1\t-1\n')
+            (write / 'gas-balance.tsv').write_text('9000\t1\t100\t2600\t9\n9240\t1\t100\t1200\t7\n')
+            (write / 'gas-transfers.tsv').write_text('9024\t1\t10\t20\n9120\t2\t10\t20\n')
+            report = audit_player(root)['gas_balance']
+            self.assertEqual(report['paused_samples'], 2)
+            self.assertEqual(report['accepted_mineral_transfers'], 2)
+            self.assertEqual(report['max_sampled_gas'], 2600)
+            self.assertEqual(report['excess_gas_low_mineral_samples'], 1)
+            self.assertNotIn('mined_minerals', report)
+
     def test_capacity_request_needs_creation_and_live_training_evidence(self):
         with tempfile.TemporaryDirectory() as root:
             write = Path(root) / 'bwapi-data/write'

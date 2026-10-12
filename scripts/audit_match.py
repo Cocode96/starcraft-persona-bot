@@ -109,6 +109,8 @@ def audit_player(folder):
         run = run + 1 if blocked else 0
         longest_run = max(longest_run, run)
     facilities = [tuple(map(int, row)) for row in rows(root / 'facilities.tsv')]
+    gas_balance = [tuple(map(int, row)) for row in rows(root / 'gas-balance.tsv')]
+    gas_transfers = rows(root / 'gas-transfers.tsv')
     capacity_additions = []
     for request in rows(root / 'capacity-plans.tsv'):
         requested = int(request[0])
@@ -140,6 +142,13 @@ def audit_player(folder):
         'final_status': status[-1] if status else None,
         'test_limit_reached': (root / 'test-limit.txt').is_file(),
         'casters': caster_report,
+        'gas_balance': {
+            'samples': len(gas_balance),
+            'paused_samples': sum(row[1] != 0 for row in gas_balance),
+            'accepted_mineral_transfers': len(gas_transfers),
+            'max_sampled_gas': max((row['gas'] for row in status), default=None),
+            'excess_gas_low_mineral_samples': sum(row['gas'] >= 2500 and row['minerals'] < 300 for row in status),
+            'scope': 'Resource snapshots and accepted transfer commands, not completed mining cycles or personal economic choices.'},
         'capacity': {'gateway_additions': capacity_additions,
                      'scope': 'Requests, observed creation and training samples; not completed unit output or personal build fidelity.'},
         'supply': {'samples': len(supply_samples), 'blocked_samples': blocked_samples,

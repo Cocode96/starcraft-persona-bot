@@ -1,6 +1,7 @@
 #include "PersonaBot.h"
 #include "SupplyPolicy.h"
 #include "ProductionPolicy.h"
+#include "EconomyPolicy.h"
 
 #include <algorithm>
 #include <fstream>
@@ -26,6 +27,7 @@ void PersonaBot::onStart()
     productionCounts_.clear();
     gasAssignments_.clear();
     mineralAssignments_.clear();
+    gasPaused_ = false;
     openingIndex_ = 0;
     baseSites_.clear();
     placements_.clear();
@@ -440,9 +442,33 @@ void PersonaBot::economy()
             entry = gasAssignments_.erase(entry);
         else ++entry;
     }
+    const auto self = Broodwar->self();
+    const int frame = Broodwar->getFrameCount();
+    const bool balanceGas = self->getRace() == Races::Zerg && config_.schemaVersion >= 2 &&
+        frame > config_.openingEndFrame;
+    gasPaused_ = EconomyPolicy::pauseGas(gasPaused_, balanceGas, self->minerals(), self->gas());
+    if (gasPaused_ && frame % 96 == 0)
+    {
+        // Keep carried resources and redirect only one worker per transfer pass.
+        for (auto entry = gasAssignments_.begin(); entry != gasAssignments_.end(); ++entry)
+        {
+            auto worker = Broodwar->getUnit(entry->first);
+            if (!worker || worker->isCarryingGas() || worker->isCarryingMinerals()) continue;
+            auto mineral = mineralTarget(worker);
+            if (mineral && worker->gather(mineral))
+            {
+                std::ofstream("bwapi-data/write/gas-transfers.tsv", std::ios::app)
+                    << frame << '\t' << worker->getID() << '\t' << entry->second << '\t' << mineral->getID() << '\n';
+                mineralAssignments_[worker->getID()] = mineral->getID();
+                gasAssignments_.erase(entry);
+                break;
+            }
+        }
+    }
     // Explicit assignments include travel/return phases and the latency before an order is visible.
     for (auto refinery : Broodwar->self()->getUnits())
     {
+        if (gasPaused_) break;
         if (!refinery->getType().isRefinery() || !refinery->isCompleted() || refinery->getResources() <= 0) continue;
         int assigned = 0;
         for (const auto& assignment : gasAssignments_) if (assignment.second == refinery->getID()) ++assigned;
@@ -482,29 +508,7 @@ void PersonaBot::economy()
             worker->returnCargo();
             continue;
         }
-        Unit target = nullptr;
-        int distance = std::numeric_limits<int>::max();
-        for (auto mineral : Broodwar->getMinerals())
-        {
-            if (!mineral->exists() || mineral->getResources() == 0) continue;
-            bool supported = false;
-            for (auto depot : Broodwar->self()->getUnits())
-                if (depot->getType().isResourceDepot() && depot->isCompleted() &&
-                    depot->getDistance(mineral) < 400) supported = true;
-            int assigned = 0;
-            for (const auto& assignment : mineralAssignments_)
-            {
-                auto other = Broodwar->getUnit(assignment.first);
-                if (other && other->exists() && other->getType().isWorker() &&
-                    assignment.second == mineral->getID() && assignment.first != worker->getID()) ++assigned;
-            }
-            const int d = worker->getDistance(mineral) + assigned * 160;
-            if (supported && d < distance && worker->hasPath(mineral))
-            {
-                target = mineral;
-                distance = d;
-            }
-        }
+        auto target = mineralTarget(worker);
         if (target && worker->gather(target)) mineralAssignments_[worker->getID()] = target->getID();
     }
     if (Broodwar->getFrameCount() % 96 == 0)
@@ -542,6 +546,38 @@ void PersonaBot::economy()
             }
         }
     }
+    if (frame % 240 == 0)
+        std::ofstream("bwapi-data/write/gas-balance.tsv", std::ios::app)
+            << frame << '\t' << gasPaused_ << '\t' << self->minerals() << '\t' << self->gas()
+            << '\t' << gasAssignments_.size() << '\n';
+}
+
+Unit PersonaBot::mineralTarget(Unit worker) const
+{
+    Unit target = nullptr;
+    int distance = std::numeric_limits<int>::max();
+    for (auto mineral : Broodwar->getMinerals())
+    {
+        if (!mineral->exists() || mineral->getResources() == 0) continue;
+        bool supported = false;
+        for (auto depot : Broodwar->self()->getUnits())
+            if (depot->getType().isResourceDepot() && depot->isCompleted() &&
+                depot->getDistance(mineral) < 400) supported = true;
+        int assigned = 0;
+        for (const auto& assignment : mineralAssignments_)
+        {
+            auto other = Broodwar->getUnit(assignment.first);
+            if (other && other->exists() && other->getType().isWorker() &&
+                assignment.second == mineral->getID() && assignment.first != worker->getID()) ++assigned;
+        }
+        const int d = worker->getDistance(mineral) + assigned * 160;
+        if (supported && d < distance && worker->hasPath(mineral))
+        {
+            target = mineral;
+            distance = d;
+        }
+    }
+    return target;
 }
 
 void PersonaBot::production()
