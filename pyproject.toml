@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "starcraft-persona-bot"
+version = "0.1.0"
+description = "Replay-derived player profiles and a BWAPI practice bot"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+persona = "persona.cli:main"
+
+[tool.setuptools]
+packages = ["persona"]
