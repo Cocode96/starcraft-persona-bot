@@ -19,6 +19,7 @@ int main()
                   << ",\"building\":" << (type.isBuilding() ? "true" : "false")
                   << ",\"worker\":" << (type.isWorker() ? "true" : "false")
                   << ",\"depot\":" << (type.isResourceDepot() ? "true" : "false")
+                  << ",\"build_time\":" << type.buildTime()
                   << ",\"producer\":" << type.whatBuilds().first.getID() << '}';
     }
     std::cout << "\n}\n";

@@ -65,6 +65,14 @@ int main(int argc, char** argv)
             require(!config.load(invalid, error), "invalid imitation profile accepted");
             require(config.race == "Protoss" && config.steps.size() == 2, "failed schema 2 load mutated state");
         }
+        std::string temporal = imitation;
+        temporal.replace(temporal.find("schema_version=2"), 16, "schema_version=3");
+        temporal += "opening_end_frame=6000\nopening=0,3,64,5\nopening=1000,0,156,1\n";
+        std::istringstream temporalInput(temporal);
+        require(config.load(temporalInput, error), "schema 3 opening rejected");
+        require(config.opening.size() == 2 && config.opening[0].kind == 3, "production order lost");
+        std::istringstream invalidHorizon(temporal + "opening=7000,3,64,7\n");
+        require(!config.load(invalidHorizon, error), "opening outside horizon accepted");
         std::cout << "Profile config contract validated\n";
     }
     catch (const std::exception& error)

@@ -11,7 +11,7 @@ public:
     struct ScriptStep
     {
         int frame;
-        int kind; // 0 building, 1 technology, 2 upgrade
+        int kind; // 0 building, 1 technology, 2 upgrade, 3 production target (opening only)
         int id;
         int count;
     };
@@ -37,6 +37,8 @@ public:
     int attackUnits = 12;
     int workerTarget = 24;
     int firstAttackFrame = 12000;
+    int openingEndFrame = 0;
     std::vector<ScriptStep> steps;
+    std::vector<ScriptStep> opening;
     std::vector<UnitWeight> weights;
 };

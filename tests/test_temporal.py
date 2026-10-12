@@ -1,0 +1,54 @@
+import copy
+from datetime import datetime
+import tempfile
+from pathlib import Path
+import unittest
+
+from persona.temporal import current_period, map_family, build_current, export_current, recency_weight, production_intents
+from persona.imitation import samples_for, timestamp
+from test_imitation import dataset
+
+
+class TemporalTests(unittest.TestCase):
+    def test_spam_train_inputs_do_not_demand_dozens_of_probes_before_pylon(self):
+        events = [{'frame': frame, 'kind': 'train', 'id': 64, 'producer_tags': [99]}
+                  for frame in (3, 4, 103, 108, 112, 116, 121, 142, 147, 337, 342, 346)]
+        events.append({'frame': 350, 'kind': 'train', 'id': 64, 'producer_tags': [100]})
+        filtered = list(production_intents(events, 'Protoss'))
+        self.assertEqual([e['frame'] for e in filtered], [3, 337, 350])
+
+    def test_long_break_starts_new_period(self):
+        samples = samples_for(dataset(), 'PlayerA', 'Zerg')
+        recent = copy.deepcopy(samples[-1])
+        recent['start_time'] = '2026-10-10T20:00:00+09:00'
+        self.assertEqual(current_period(samples + [recent]), [recent])
+
+    def test_deployment_uses_recent_games_without_claiming_holdout_score(self):
+        model = build_current(dataset(), 'PlayerA', 'Zerg', 'Protoss')
+        self.assertEqual(model['context']['period_games'], 10)
+        self.assertEqual(model['context']['opening_time'], '2026-01-10T20:00:00+09:00')
+        self.assertEqual(model['context']['skill_trend_assumption'], 'none')
+        self.assertNotIn('evaluation', model)
+        with tempfile.TemporaryDirectory() as root:
+            file = Path(root) / 'persona.ini'
+            orders = export_current(model, file)
+            self.assertTrue(any(order[1] == 3 for order in orders))
+            self.assertIn('schema_version=3', file.read_text())
+
+    def test_same_map_preferred_and_no_old_matchup_silently_reused(self):
+        data = dataset()
+        data['games'][7]['map'] = '투혼 1.4'
+        model = build_current(data, 'PlayerA', 'Zerg', 'Protoss')
+        self.assertEqual(model['context']['exact_map_games'], 1)
+        self.assertEqual(model['context']['opening_time'], '2026-01-08T20:00:00+09:00')
+        self.assertEqual(map_family('(4)Fighting_Spirit 1.3'), map_family('투혼 1.4'))
+        with self.assertRaises(ValueError):
+            build_current(data, 'PlayerA', 'Zerg', 'Terran')
+
+    def test_recency_is_relevance_not_win_loss(self):
+        sample = {'start_time': '2026-01-01T00:00:00+00:00'}
+        self.assertAlmostEqual(recency_weight(sample, timestamp('2026-01-31T00:00:00+00:00')), 0.5)
+
+
+if __name__ == '__main__':
+    unittest.main()

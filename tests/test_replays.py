@@ -31,6 +31,20 @@ def fixture():
 
 
 class ReplayTests(unittest.TestCase):
+    def test_hotkey_selection_and_build_coordinates_are_retained(self):
+        data = fixture()
+        data['Commands']['Cmds'] = [
+            {'PlayerID': 1, 'Frame': 1, 'Type': {'Name': 'Select'}, 'UnitTags': [91], 'IneffKind': 4},
+            {'PlayerID': 1, 'Frame': 2, 'Type': {'Name': 'Hotkey'}, 'HotkeyType': {'Name': 'Assign'}, 'Group': 2},
+            {'PlayerID': 1, 'Frame': 3, 'Type': {'Name': 'Select'}, 'UnitTags': [92]},
+            {'PlayerID': 1, 'Frame': 4, 'Type': {'Name': 'Hotkey'}, 'HotkeyType': {'Name': 'Select'}, 'Group': 2},
+            {'PlayerID': 1, 'Frame': 5, 'Type': {'Name': 'Unit Morph'}, 'Unit': {'ID': 41}},
+            {'PlayerID': 1, 'Frame': 6, 'Type': {'Name': 'Build'}, 'Unit': {'ID': 131, 'Name': 'Hatchery'}, 'Pos': {'X': 20, 'Y': 30}},
+        ]
+        events = summarize(data, 'test', [])['players'][0]['events']
+        self.assertEqual(events[0]['producer_tags'], [91])
+        self.assertEqual(events[1]['tile'], [20, 30])
+
     def test_scan_deduplicates_bytes_and_retains_source_names(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

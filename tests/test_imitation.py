@@ -81,7 +81,7 @@ class ImitationTests(unittest.TestCase):
         source["Commands"]["Cmds"].extend([base, dict(base, Frame=2501)])
         events = summarize(source, "x", [])["players"][0]["events"]
         hatcheries = [e for e in events if e["kind"] == "build" and e["id"] == 131]
-        self.assertEqual(hatcheries, [{"frame": 2500, "kind": "build", "id": 131, "count": 2}])
+        self.assertEqual(hatcheries, [{"frame": 2500, "kind": "build", "id": 131, "count": 2, "tile": [30, 30]}])
 
 
 if __name__ == "__main__":

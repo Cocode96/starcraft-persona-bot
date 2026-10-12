@@ -35,6 +35,7 @@ bool PersonaConfig::load(std::istream& input, std::string& error)
         {"hatchery_frame", &PersonaConfig::hatcheryFrame}, {"extractor_frame", &PersonaConfig::extractorFrame},
         {"hydra_den_frame", &PersonaConfig::hydraDenFrame}, {"attack_units", &PersonaConfig::attackUnits},
         {"worker_target", &PersonaConfig::workerTarget}, {"first_attack_frame", &PersonaConfig::firstAttackFrame},
+        {"opening_end_frame", &PersonaConfig::openingEndFrame},
     };
     std::set<std::string> seen;
     std::set<std::pair<int, int>> weightKeys;
@@ -48,13 +49,15 @@ bool PersonaConfig::load(std::istream& input, std::string& error)
             const auto separator = line.find('=');
             if (separator == std::string::npos) throw std::runtime_error("missing =");
             const auto key = line.substr(0, separator), value = line.substr(separator + 1);
-            if (key == "step")
+            if (key == "step" || key == "opening")
             {
                 auto values = row(value, 4);
-                if (values[1] > 2 || values[2] > 227 || values[3] < 1 || values[3] > 64 ||
-                    next.steps.size() >= kMaxPersonaSteps || (!next.steps.empty() && values[0] < next.steps.back().frame))
+                auto& sequence = key == "step" ? next.steps : next.opening;
+                if (values[1] > (key == "step" ? 2 : 3) || values[2] > 227 || values[3] < 1 || values[3] > 400 ||
+                    sequence.size() >= (key == "step" ? kMaxPersonaSteps : 512) ||
+                    (!sequence.empty() && values[0] < sequence.back().frame))
                     throw std::runtime_error("invalid or unordered step");
-                next.steps.push_back({values[0], values[1], values[2], values[3]});
+                sequence.push_back({values[0], values[1], values[2], values[3]});
                 continue;
             }
             if (key == "weight")
@@ -78,7 +81,7 @@ bool PersonaConfig::load(std::istream& input, std::string& error)
                 if (value != "Zerg" && value != "Terran" && value != "Protoss") throw std::runtime_error("unknown race");
                 next.race = value;
             }
-            else if (key == "schema_version") next.schemaVersion = number(value, 2);
+            else if (key == "schema_version") next.schemaVersion = number(value, 3);
             else if (key == "seed") next.seed = number(value);
             else
             {
@@ -90,14 +93,18 @@ bool PersonaConfig::load(std::istream& input, std::string& error)
         if (input.bad()) throw std::runtime_error("read failure");
         const std::set<std::string> legacy = {"schema_version", "name", "sample_games", "pool_frame", "hatchery_frame",
             "extractor_frame", "hydra_den_frame", "attack_units", "worker_target"};
-        const std::set<std::string> current = {"schema_version", "name", "race", "sample_games", "seed", "worker_target", "first_attack_frame"};
+        std::set<std::string> current = {"schema_version", "name", "race", "sample_games", "seed", "worker_target", "first_attack_frame"};
+        if (next.schemaVersion == 3) current.insert("opening_end_frame");
+        if (next.schemaVersion != 3 && !next.opening.empty()) throw std::runtime_error("opening requires schema 3");
         if (next.schemaVersion == 1)
         {
             if (seen != legacy || !next.steps.empty() || !next.weights.empty()) throw std::runtime_error("incomplete legacy profile");
         }
-        else if (next.schemaVersion == 2)
+        else if (next.schemaVersion == 2 || next.schemaVersion == 3)
         {
             if (seen != current || next.steps.empty()) throw std::runtime_error("incomplete imitation profile");
+            if (next.schemaVersion == 3 && (next.opening.empty() || next.openingEndFrame < next.opening.back().frame))
+                throw std::runtime_error("invalid opening horizon");
             for (int phase = 0; phase < 4; ++phase)
                 if (std::none_of(next.weights.begin(), next.weights.end(), [phase](const UnitWeight& w) { return w.phase == phase; }))
                     throw std::runtime_error("missing phase policy");

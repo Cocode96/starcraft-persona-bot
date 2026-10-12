@@ -11,13 +11,15 @@ int main(int argc, char** argv)
     std::string error;
     std::ifstream file(argv[1]);
     if (!file || !config.load(file, error)) { std::cerr << error; return 1; }
-    for (const auto& step : config.steps)
+    auto steps = config.steps;
+    steps.insert(steps.end(), config.opening.begin(), config.opening.end());
+    for (const auto& step : steps)
     {
         bool valid = false;
-        if (step.kind == 0)
+        if (step.kind == 0 || step.kind == 3)
         {
             const UnitType type(step.id);
-            valid = type.getID() == step.id && type.isBuilding() && type.getRace().getName() == config.race;
+            valid = type.getID() == step.id && type.isBuilding() == (step.kind == 0) && type.getRace().getName() == config.race;
         }
         else if (step.kind == 1)
         {
@@ -41,7 +43,7 @@ int main(int argc, char** argv)
     }
     std::mt19937 random(config.seed);
     for (int frame : {0, 4320, 8640, 14400})
-        if (config.schemaVersion == 2 && config.chooseUnit(frame, legal, random) < 0) return 1;
+        if (config.schemaVersion >= 2 && config.chooseUnit(frame, legal, random) < 0) return 1;
     std::cout << config.name << '/' << config.race << ": " << config.steps.size() << " steps, "
               << config.weights.size() << " weights validated against BWAPI\n";
 }

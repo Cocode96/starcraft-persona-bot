@@ -35,14 +35,30 @@ def summarize(parsed, digest, sources):
         building_counts = Counter()
         start = stats.get("StartLocation")
         attack_frames = []
+        selected, groups = [], {}
         for command in commands:
             if command.get("PlayerID") != pid:
                 continue
+            kind = command.get("Type", {}).get("Name")
+            # Selection state must include inputs marked ineffective by screp.
+            if kind == "Select":
+                selected = list(command.get("UnitTags", []))
+            elif kind == "Select Add":
+                selected = list(dict.fromkeys(selected + command.get("UnitTags", [])))
+            elif kind == "Select Remove":
+                selected = [tag for tag in selected if tag not in command.get("UnitTags", [])]
+            elif kind == "Hotkey":
+                group, operation = command.get("Group"), command.get("HotkeyType", {}).get("Name")
+                if operation == "Assign":
+                    groups[group] = selected[:]
+                elif operation == "Select":
+                    selected = groups.get(group, [])[:]
+                elif operation == "Add":
+                    groups[group] = list(dict.fromkeys(groups.get(group, []) + selected))
             # screp marks redundant/ineffective commands; even unmarked inputs
             # do NOT prove the requested action completed in the game.
             if command.get("IneffKind", 0):
                 continue
-            kind = command.get("Type", {}).get("Name")
             unit = command.get("Unit", {})
             if kind in ("Build", "Building Morph") and "ID" in unit:
                 key = str(unit["ID"])
@@ -54,12 +70,16 @@ def summarize(parsed, digest, sources):
                     seen_builds.add(signature)
                     building_counts[key] += 1
                     initial = int(UNIT_TYPES[key]["depot"] and kind != "Building Morph")
-                    events.append({"frame": command["Frame"], "kind": "build", "id": unit["ID"],
-                                   "count": building_counts[key] + initial})
+                    event = {"frame": command["Frame"], "kind": "build", "id": unit["ID"],
+                             "count": building_counts[key] + initial}
+                    if "X" in position and "Y" in position:
+                        event["tile"] = [position["X"], position["Y"]]
+                    events.append(event)
             if kind in ("Train", "Unit Morph") and "ID" in unit:
                 production[str(unit["ID"])] += 1
                 if str(unit["ID"]) in UNIT_TYPES:
-                    events.append({"frame": command["Frame"], "kind": "train", "id": unit["ID"]})
+                    events.append({"frame": command["Frame"], "kind": "train", "id": unit["ID"],
+                                   "producer_tags": selected[:], "command_type": kind})
             for command_name, field in (("Tech", "Tech"), ("Upgrade", "Upgrade")):
                 if kind == command_name and field in command:
                     signature = (kind.lower(), command[field]["ID"])
@@ -76,6 +96,7 @@ def summarize(parsed, digest, sources):
             "name": clean_text(player["Name"]), "player_id": pid,
             "race": player["Race"]["Name"], "team": player.get("Team"),
             "apm": stats.get("APM"), "eapm": stats.get("EAPM"),
+            "start_position": start,
             "first_build_commands": first_build,
             "production_commands": dict(production),
             "events": events,

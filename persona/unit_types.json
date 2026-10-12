@@ -5,6 +5,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 114
   },
   "64": {
@@ -13,6 +14,7 @@
     "building": false,
     "worker": true,
     "depot": false,
+    "build_time": 300,
     "producer": 154
   },
   "0": {
@@ -21,6 +23,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 360,
     "producer": 111
   },
   "9": {
@@ -29,6 +32,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 114
   },
   "65": {
@@ -37,6 +41,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 160
   },
   "1": {
@@ -45,6 +50,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 111
   },
   "66": {
@@ -53,6 +59,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 160
   },
   "2": {
@@ -61,6 +68,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 450,
     "producer": 113
   },
   "67": {
@@ -69,6 +77,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 160
   },
   "3": {
@@ -77,6 +86,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 113
   },
   "69": {
@@ -85,6 +95,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 155
   },
   "5": {
@@ -93,6 +104,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 113
   },
   "7": {
@@ -101,6 +113,7 @@
     "building": false,
     "worker": true,
     "depot": false,
+    "build_time": 300,
     "producer": 106
   },
   "11": {
@@ -109,6 +122,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 114
   },
   "12": {
@@ -117,6 +131,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 2000,
     "producer": 114
   },
   "14": {
@@ -125,6 +140,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 1500,
     "producer": 108
   },
   "30": {
@@ -133,6 +149,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 113
   },
   "32": {
@@ -141,6 +158,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 360,
     "producer": 111
   },
   "34": {
@@ -149,6 +167,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 450,
     "producer": 111
   },
   "35": {
@@ -157,6 +176,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 1,
     "producer": 131
   },
   "36": {
@@ -165,6 +185,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 1,
     "producer": 35
   },
   "37": {
@@ -173,6 +194,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 420,
     "producer": 35
   },
   "38": {
@@ -181,6 +203,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 420,
     "producer": 35
   },
   "39": {
@@ -189,6 +212,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 35
   },
   "41": {
@@ -197,6 +221,7 @@
     "building": false,
     "worker": true,
     "depot": false,
+    "build_time": 300,
     "producer": 35
   },
   "42": {
@@ -205,6 +230,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 35
   },
   "43": {
@@ -213,6 +239,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 35
   },
   "44": {
@@ -221,6 +248,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 43
   },
   "45": {
@@ -229,6 +257,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 35
   },
   "46": {
@@ -237,6 +266,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 35
   },
   "47": {
@@ -245,6 +275,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 450,
     "producer": 35
   },
   "50": {
@@ -253,6 +284,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 130
   },
   "58": {
@@ -261,6 +293,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 114
   },
   "59": {
@@ -269,6 +302,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 1,
     "producer": 43
   },
   "60": {
@@ -277,6 +311,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 167
   },
   "61": {
@@ -285,6 +320,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 160
   },
   "62": {
@@ -293,6 +329,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 43
   },
   "63": {
@@ -301,6 +338,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 300,
     "producer": 61
   },
   "68": {
@@ -309,6 +347,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 300,
     "producer": 67
   },
   "70": {
@@ -317,6 +356,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 167
   },
   "71": {
@@ -325,6 +365,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 2400,
     "producer": 167
   },
   "72": {
@@ -333,6 +374,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 2100,
     "producer": 167
   },
   "73": {
@@ -341,6 +383,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 300,
     "producer": 72
   },
   "83": {
@@ -349,6 +392,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 1050,
     "producer": 155
   },
   "84": {
@@ -357,6 +401,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 155
   },
   "85": {
@@ -365,6 +410,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 105,
     "producer": 83
   },
   "97": {
@@ -373,6 +419,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 1,
     "producer": 38
   },
   "103": {
@@ -381,6 +428,7 @@
     "building": false,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 38
   },
   "106": {
@@ -389,6 +437,7 @@
     "building": true,
     "worker": false,
     "depot": true,
+    "build_time": 1800,
     "producer": 7
   },
   "107": {
@@ -397,6 +446,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 106
   },
   "108": {
@@ -405,6 +455,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 106
   },
   "109": {
@@ -413,6 +464,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 7
   },
   "110": {
@@ -421,6 +473,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 7
   },
   "111": {
@@ -429,6 +482,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 7
   },
   "112": {
@@ -437,6 +491,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 7
   },
   "113": {
@@ -445,6 +500,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 7
   },
   "114": {
@@ -453,6 +509,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1050,
     "producer": 7
   },
   "115": {
@@ -461,6 +518,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 114
   },
   "116": {
@@ -469,6 +527,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 7
   },
   "117": {
@@ -477,6 +536,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 116
   },
   "118": {
@@ -485,6 +545,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 116
   },
   "120": {
@@ -493,6 +554,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 113
   },
   "122": {
@@ -501,6 +563,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 7
   },
   "123": {
@@ -509,6 +572,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 7
   },
   "124": {
@@ -517,6 +581,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 450,
     "producer": 7
   },
   "125": {
@@ -525,6 +590,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 450,
     "producer": 7
   },
   "131": {
@@ -533,6 +599,7 @@
     "building": true,
     "worker": false,
     "depot": true,
+    "build_time": 1800,
     "producer": 41
   },
   "132": {
@@ -541,6 +608,7 @@
     "building": true,
     "worker": false,
     "depot": true,
+    "build_time": 1500,
     "producer": 131
   },
   "133": {
@@ -549,6 +617,7 @@
     "building": true,
     "worker": false,
     "depot": true,
+    "build_time": 1800,
     "producer": 132
   },
   "134": {
@@ -557,6 +626,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 41
   },
   "135": {
@@ -565,6 +635,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 41
   },
   "136": {
@@ -573,6 +644,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 41
   },
   "137": {
@@ -581,6 +653,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1800,
     "producer": 141
   },
   "138": {
@@ -589,6 +662,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 41
   },
   "139": {
@@ -597,6 +671,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 41
   },
   "140": {
@@ -605,6 +680,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 41
   },
   "141": {
@@ -613,6 +689,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1800,
     "producer": 41
   },
   "142": {
@@ -621,6 +698,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 41
   },
   "143": {
@@ -629,6 +707,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 300,
     "producer": 41
   },
   "144": {
@@ -637,6 +716,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 300,
     "producer": 143
   },
   "146": {
@@ -645,6 +725,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 300,
     "producer": 143
   },
   "149": {
@@ -653,6 +734,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 41
   },
   "154": {
@@ -661,6 +743,7 @@
     "building": true,
     "worker": false,
     "depot": true,
+    "build_time": 1800,
     "producer": 64
   },
   "155": {
@@ -669,6 +752,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1200,
     "producer": 64
   },
   "156": {
@@ -677,6 +761,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 450,
     "producer": 64
   },
   "157": {
@@ -685,6 +770,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 64
   },
   "159": {
@@ -693,6 +779,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 450,
     "producer": 64
   },
   "160": {
@@ -701,6 +788,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 64
   },
   "162": {
@@ -709,6 +797,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 750,
     "producer": 64
   },
   "163": {
@@ -717,6 +806,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 64
   },
   "164": {
@@ -725,6 +815,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 64
   },
   "165": {
@@ -733,6 +824,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 64
   },
   "166": {
@@ -741,6 +833,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 600,
     "producer": 64
   },
   "167": {
@@ -749,6 +842,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 1050,
     "producer": 64
   },
   "169": {
@@ -757,6 +851,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 64
   },
   "170": {
@@ -765,6 +860,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 900,
     "producer": 64
   },
   "171": {
@@ -773,6 +869,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 450,
     "producer": 64
   },
   "172": {
@@ -781,6 +878,7 @@
     "building": true,
     "worker": false,
     "depot": false,
+    "build_time": 450,
     "producer": 64
   }
 }
