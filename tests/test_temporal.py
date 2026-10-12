@@ -50,6 +50,16 @@ class TemporalTests(unittest.TestCase):
         sample = {'start_time': '2026-01-01T00:00:00+00:00'}
         self.assertAlmostEqual(recency_weight(sample, timestamp('2026-01-31T00:00:00+00:00')), 0.5)
 
+    def test_runtime_map_filename_keeps_same_map_candidate(self):
+        data = dataset()
+        data['games'][7]['map'] = 'Polypoid 1.75'
+        model = build_current(data, 'PlayerA', 'Zerg', 'Protoss', '(4)Polypoid1.75', seed=5)
+        self.assertEqual(model['context']['exact_map_games'], 1)
+        self.assertEqual(model['context']['opening_time'], '2026-01-08T20:00:00+09:00')
+        self.assertEqual(model['context']['opening_fallback'], 'none')
+        self.assertEqual(map_family('(4)FightingSpirit1.3'), map_family('투혼 1.4'))
+        self.assertNotEqual(map_family('Neo Polypoid 1.75'), map_family('Polypoid 1.75'))
+
     def test_openings_preserve_frequency_recency_and_whole_source(self):
         samples = samples_for(dataset(), 'PlayerA', 'Zerg')[:3]
         for sample in samples:

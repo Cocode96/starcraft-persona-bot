@@ -41,9 +41,13 @@ def production_intents(events, race):
 
 def map_family(name):
     name = name.lower().replace('_', ' ')
-    if '투혼' in name or 'fighting spirit' in name:
+    name = re.sub(r'^\s*[\[(]\d+[\])]\s*', '', name)
+    if '투혼' in name or re.search(r'fighting\s*spirit', name):
         return 'Fighting Spirit'
-    return re.sub(r'\s+\d[\w.]*$', '', name).strip()
+    # Runtime filenames often omit the space before a dotted version number.
+    # Keep distinct prefixes such as Neo; only strip the player-count prefix
+    # and a trailing version, not arbitrary words from the map name.
+    return re.sub(r'(?:\s+v?\d[\w.]*|v?\d+\.\d+[\w.]*)$', '', name).strip()
 
 
 def current_period(samples, gap_days=GAP_DAYS):
