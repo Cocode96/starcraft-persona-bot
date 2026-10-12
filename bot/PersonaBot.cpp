@@ -998,7 +998,6 @@ void PersonaBot::army()
         if (unit->getDistance(center) <= 640) situation.nearbyFriendlyPower += power(unit);
     Position defense = Positions::None;
     std::vector<Unit> visibleEnemies;
-    Unit nearest = nullptr;
     for (auto enemy : Broodwar->getAllUnits())
     {
         if (!enemy->isVisible() || !enemy->getPlayer()->isEnemy(Broodwar->self())) continue;
@@ -1009,7 +1008,6 @@ void PersonaBot::army()
         {
             situation.nearbyEnemyPower += power(enemy);
             situation.enemyTemplarSeen |= enemy->getType() == UnitTypes::Protoss_High_Templar;
-            if (!nearest || enemy->getDistance(center) < nearest->getDistance(center)) nearest = enemy;
         }
         for (auto base : Broodwar->self()->getUnits())
             if (dangerous && !enemy->getType().isWorker() && base->getType().isResourceDepot() && enemy->getDistance(base) < 480)
@@ -1080,13 +1078,67 @@ void PersonaBot::army()
                     << frame << '\t' << unit->getID() << "\tstorm\t" << bestScore << '\n';
                 continue;
             }
-            // Keep casters behind nearby fighting units, never at the attack target.
-            Position threat = nearest ? nearest->getPosition() : target;
-            const int distance = std::max(1, center.getApproxDistance(threat));
-            Position screen = center + (center - threat) * 112 / distance;
+            // A global army centroid can pull a lone caster through enemy troops.
+            Position escortCenter(0, 0);
+            int escorts = 0;
+            for (auto friendly : combat)
+                if (friendly->getType().groundWeapon() != WeaponTypes::None &&
+                    !friendly->isFlying() && friendly->getDistance(unit) <= 480)
+                { escortCenter += friendly->getPosition(); ++escorts; }
+            escortCenter = escorts ? escortCenter / escorts : assemblyPoint();
+            Unit casterThreat = nullptr;
+            for (auto enemy : visibleEnemies)
+                if (enemy->getType().groundWeapon() != WeaponTypes::None &&
+                    (!casterThreat || enemy->getDistance(unit) < casterThreat->getDistance(unit))) casterThreat = enemy;
+            const Position threat = casterThreat ? casterThreat->getPosition() : target;
+            const int distance = std::max(1, escortCenter.getApproxDistance(threat));
+            const bool ready = unit->getEnergy() >= 75 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm);
+            Position screen = escortCenter + (escortCenter - threat) * (ready ? 112 : 192) / distance;
             screen.makeValid();
-            if (retreating || fighters == 0 || !Broodwar->isWalkable(WalkPosition(screen))) screen = assemblyPoint();
-            if (unit->getDistance(screen) > 64) unit->move(screen);
+            if (retreating || escorts == 0 || !unit->hasPath(screen)) screen = assemblyPoint();
+            const auto clearance = [&](Position position)
+            {
+                int result = 640;
+                for (auto enemy : visibleEnemies)
+                {
+                    const auto weapon = enemy->getType().groundWeapon();
+                    if (weapon == WeaponTypes::None) continue;
+                    // Use type range, not unseen opponent upgrade information.
+                    result = std::min(result, enemy->getDistance(position) - weapon.maxRange() - 32);
+                }
+                return result;
+            };
+            const Position origin = unit->getPosition();
+            const int currentClearance = clearance(origin);
+            const bool evade = currentClearance < (ready ? 96 : 192) ||
+                clearance(screen) < 96 || unit->isUnderStorm();
+            if (evade)
+            {
+                Position best = origin;
+                double bestMoveScore = TacticalPolicy::casterPositionScore(currentClearance, currentClearance, currentClearance, 0);
+                std::vector<Position> candidates{screen, assemblyPoint()};
+                for (int radius : {160, 320})
+                    for (int dx = -1; dx <= 1; ++dx)
+                        for (int dy = -1; dy <= 1; ++dy)
+                            if (dx || dy) candidates.push_back(origin + Position(dx * radius, dy * radius));
+                for (auto candidate : candidates)
+                {
+                    if (!candidate.isValid() || !Broodwar->isWalkable(WalkPosition(candidate)) || !unit->hasPath(candidate)) continue;
+                    int pathClearance = currentClearance;
+                    for (int step = 1; step <= 4; ++step)
+                        pathClearance = std::min(pathClearance, clearance(origin + (candidate - origin) * step / 4));
+                    double score = TacticalPolicy::casterPositionScore(clearance(candidate), pathClearance,
+                        currentClearance, origin.getApproxDistance(candidate));
+                    if (unit->isUnderStorm() && origin.getApproxDistance(candidate) >= 96) score += 160;
+                    if (score > bestMoveScore) { bestMoveScore = score; best = candidate; }
+                }
+                screen = best;
+            }
+            if (unit->getDistance(screen) > (evade ? 24 : 64) && unit->move(screen))
+                std::ofstream("bwapi-data/write/caster-moves.tsv", std::ios::app)
+                    << frame << '\t' << unit->getID() << '\t' << (evade ? "evade" : "screen")
+                    << '\t' << escorts << '\t' << currentClearance << '\t' << clearance(screen)
+                    << '\t' << screen.x << '\t' << screen.y << '\n';
             continue;
         }
         if (retreating || unit->isUnderStorm())

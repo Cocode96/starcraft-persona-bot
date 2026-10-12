@@ -71,6 +71,7 @@ def audit_player(folder):
     rallies = rows(root / 'rally-orders.tsv')
     casters = [list(map(int, row)) for row in rows(root / 'caster-state.tsv')]
     spells = rows(root / 'micro-actions.tsv')
+    caster_moves = rows(root / 'caster-moves.tsv')
     caster_report = {
         'samples': len(casters),
         'units_observed': len({row[2] for row in casters}),
@@ -78,6 +79,10 @@ def audit_player(folder):
         'max_energy': max((row[3] for row in casters), default=None),
         'researched_and_energy_ready_samples': sum(row[4] and row[3] >= 75 for row in casters),
         'accepted_storm_commands': sum(row[2] == 'storm' for row in spells),
+        'movement_log_present': (root / 'caster-moves.tsv').is_file(),
+        'accepted_evade_moves': sum(row[2] == 'evade' for row in caster_moves),
+        'evade_destinations_with_more_clearance': sum(
+            row[2] == 'evade' and int(row[5]) > int(row[4]) for row in caster_moves),
         'scope': 'Sampled state and accepted commands, not damage or caster protection quality.'
     }
     if frame >= 6000 and not scout:

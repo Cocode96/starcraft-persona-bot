@@ -1,9 +1,18 @@
 #pragma once
+#include <algorithm>
 
 // Shared execution safeguards, not learned personal micro or a strength model.
 class TacticalPolicy
 {
 public:
+    // Clearance is distance outside visible ground-weapon range, in pixels.
+    // Reject paths that deepen contact even when their endpoint looks safe.
+    static double casterPositionScore(int clearance, int pathClearance, int currentClearance, int travel)
+    {
+        if (pathClearance < std::min(0, currentClearance) - 16) return -100000;
+        return std::min(320, clearance) - travel * 0.35;
+    }
+
     enum class Stance { Gather, Advance, Defend, Hold, Retreat };
     struct Situation
     {

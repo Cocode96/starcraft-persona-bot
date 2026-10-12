@@ -24,6 +24,12 @@ int main()
         require(TacticalPolicy::choose(s) == Stance::Hold, "Uncertain templar contact should hold lurker position");
         s.enemyBaseRecentlySeen = true;
         require(TacticalPolicy::choose(s) == Stance::Advance, "New scouting evidence should allow advance");
+        require(TacticalPolicy::casterPositionScore(160, -40, -40, 160) >
+                TacticalPolicy::casterPositionScore(-40, -40, -40, 0), "Caster should escape current weapon range");
+        require(TacticalPolicy::casterPositionScore(320, -80, 40, 160) <
+                TacticalPolicy::casterPositionScore(40, 40, 40, 0), "Safe endpoint cannot justify crossing enemy fire");
+        require(TacticalPolicy::casterPositionScore(320, 320, 320, 0) >
+                TacticalPolicy::casterPositionScore(500, 320, 320, 160), "Safe caster should not flee indefinitely");
         std::cout << "Tactical execution safeguards validated\n";
     }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }

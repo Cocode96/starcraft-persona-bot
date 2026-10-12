@@ -55,6 +55,21 @@ class RuntimeAuditTests(unittest.TestCase):
             self.assertEqual(report['accepted_storm_commands'], 1)
             self.assertNotIn('damage', report)
 
+    def test_caster_escape_orders_are_not_counted_as_successful_survival(self):
+        with tempfile.TemporaryDirectory() as root:
+            write = Path(root) / 'bwapi-data/write'
+            write.mkdir(parents=True)
+            self.assertFalse(audit_player(root)['casters']['movement_log_present'])
+            (write / 'caster-moves.tsv').write_text(
+                '14000\t10\tevade\t0\t-20\t160\t100\t100\n'
+                '14048\t10\tscreen\t3\t200\t240\t100\t100\n'
+                '14096\t10\tevade\t0\t200\t180\t100\t100\n')
+            report = audit_player(root)['casters']
+            self.assertTrue(report['movement_log_present'])
+            self.assertEqual(report['accepted_evade_moves'], 2)
+            self.assertEqual(report['evade_destinations_with_more_clearance'], 1)
+            self.assertNotIn('survival_rate', report)
+
 
 if __name__ == '__main__':
     unittest.main()
