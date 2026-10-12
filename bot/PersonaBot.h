@@ -47,6 +47,7 @@ private:
     void production();
     void imitationProduction();
     bool openingProduction();
+    bool executeDueResearch();
     bool make(BWAPI::UnitType type);
     bool requirementsMet(BWAPI::UnitType type) const;
     bool prepareRequirements(BWAPI::UnitType type, int depth = 0);
@@ -54,6 +55,7 @@ private:
     bool validateProfile() const;
     void recordStructure(BWAPI::Unit unit);
     void army();
+    void logCasterState(BWAPI::Player player, const char* path) const;
     BWAPI::Position attackTarget();
 
     PersonaConfig config_;

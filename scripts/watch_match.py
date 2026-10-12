@@ -82,12 +82,14 @@ drop_players = OFF
 """
 
 
-def launch(folder, fast_test=False, max_frames=0):
+def launch(folder, fast_test=False, max_frames=0, replay_analysis=False):
     environment = dict(os.environ, PERSONA_AUTO_CAMERA="1")
     if fast_test:
         environment['PERSONA_FAST_TEST'] = '1'
     if max_frames:
         environment['PERSONA_TEST_MAX_FRAMES'] = str(max_frames)
+    if replay_analysis:
+        environment['PERSONA_REPLAY_ANALYSIS'] = '1'
     result = subprocess.run([str(folder / "injectory_x86.exe"), "--launch", str(folder / "StarCraft.exe"),
                              "--inject", str(folder / "bwapi-data/BWAPI.dll"),
                              "--print-pid"], cwd=folder, capture_output=True, text=True,

@@ -40,6 +40,21 @@ class RuntimeAuditTests(unittest.TestCase):
             self.assertEqual(report['state'], 'checks_passed')
             self.assertTrue(report['match_finished'])
 
+    def test_caster_research_state_is_separate_from_spell_success(self):
+        with tempfile.TemporaryDirectory() as root:
+            write = Path(root) / 'bwapi-data/write'
+            write.mkdir(parents=True)
+            (write / 'caster-state.tsv').write_text(
+                '14000\t0\t10\t200\t0\t1\t100\t4\t6\t100\t100\n'
+                '16000\t0\t10\t200\t1\t0\t100\t4\t6\t100\t100\n')
+            (write / 'micro-actions.tsv').write_text('16002\t10\tstorm\t4\n')
+            report = audit_player(root)['casters']
+            self.assertEqual(report['first_storm_researched_frame'], 16000)
+            self.assertEqual(report['units_observed'], 1)
+            self.assertEqual(report['researched_and_energy_ready_samples'], 1)
+            self.assertEqual(report['accepted_storm_commands'], 1)
+            self.assertNotIn('damage', report)
+
 
 if __name__ == '__main__':
     unittest.main()

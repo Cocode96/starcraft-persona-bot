@@ -69,6 +69,17 @@ def audit_player(folder):
             break
     scout = rows(root / 'scout-orders.tsv')
     rallies = rows(root / 'rally-orders.tsv')
+    casters = [list(map(int, row)) for row in rows(root / 'caster-state.tsv')]
+    spells = rows(root / 'micro-actions.tsv')
+    caster_report = {
+        'samples': len(casters),
+        'units_observed': len({row[2] for row in casters}),
+        'first_storm_researched_frame': next((row[0] for row in casters if row[4]), None),
+        'max_energy': max((row[3] for row in casters), default=None),
+        'researched_and_energy_ready_samples': sum(row[4] and row[3] >= 75 for row in casters),
+        'accepted_storm_commands': sum(row[2] == 'storm' for row in spells),
+        'scope': 'Sampled state and accepted commands, not damage or caster protection quality.'
+    }
     if frame >= 6000 and not scout:
         findings.append('No scout assignment recorded by frame 6000.')
     if frame >= 6000 and not rallies:
@@ -84,6 +95,7 @@ def audit_player(folder):
         'rally_commands': len(rallies), 'worker_swarm_events': swarms,
         'final_status': status[-1] if status else None,
         'test_limit_reached': (root / 'test-limit.txt').is_file(),
+        'casters': caster_report,
         'scope': 'Basic execution telemetry only; not wall tightness, micro quality, win rate or personal likeness.'
     }
 

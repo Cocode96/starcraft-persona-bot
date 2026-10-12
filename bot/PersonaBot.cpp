@@ -38,6 +38,13 @@ void PersonaBot::onStart()
     if (Broodwar->isReplay())
     {
         Broodwar->setLocalSpeed(42);
+        if (std::getenv("PERSONA_REPLAY_ANALYSIS"))
+        {
+            Broodwar->setLocalSpeed(0);
+            Broodwar->setFrameSkip(24);
+            Broodwar->setGUI(false);
+            if (const auto limit = std::getenv("PERSONA_TEST_MAX_FRAMES")) testMaxFrames_ = std::atoi(limit);
+        }
         for (auto unit : Broodwar->getAllUnits())
             if (unit->getType().isResourceDepot())
             {
@@ -734,6 +741,50 @@ bool PersonaBot::openingProduction()
     return frame < config_.openingEndFrame;
 }
 
+bool PersonaBot::executeDueResearch()
+{
+    const auto self = Broodwar->self();
+    const int frame = Broodwar->getFrameCount();
+    for (const auto& step : config_.steps)
+    {
+        if (step.kind != 1 || frame < step.frame) continue;
+        const TechType tech(step.id);
+        if (self->hasResearched(tech) || self->isResearching(tech)) continue;
+        if (tech.requiredUnit() != UnitTypes::None)
+        {
+            int completed = self->completedUnitCount(tech.requiredUnit());
+            if (tech.requiredUnit() == UnitTypes::Zerg_Lair) completed += self->completedUnitCount(UnitTypes::Zerg_Hive);
+            if (completed == 0) continue;
+        }
+        for (auto facility : self->getUnits())
+        {
+            if (facility->getType() != tech.whatResearches() || !facility->isCompleted() ||
+                !facility->isIdle() || !facility->isPowered()) continue;
+            // Let an observed, due research save its cost before optional unit
+            // production consumes it again. Do not wait for unavailable gas.
+            if (self->minerals() < tech.mineralPrice() || self->gas() < tech.gasPrice())
+            {
+                const bool canSave = self->gas() >= tech.gasPrice() ||
+                    self->completedUnitCount(self->getRace().getRefinery()) > 0;
+                if (canSave)
+                {
+                    if (frame % 240 == 0) std::ofstream("bwapi-data/write/research-actions.tsv", std::ios::app)
+                        << frame << '\t' << tech.getID() << "\tsaving\t" << self->minerals() << '\t' << self->gas() << '\n';
+                    return true;
+                }
+                continue;
+            }
+            if (Broodwar->canResearch(tech, facility) && facility->research(tech))
+            {
+                std::ofstream("bwapi-data/write/research-actions.tsv", std::ios::app)
+                    << frame << '\t' << tech.getID() << "\tstarted\t" << facility->getID() << '\n';
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void PersonaBot::imitationProduction()
 {
     const auto self = Broodwar->self();
@@ -761,6 +812,7 @@ void PersonaBot::imitationProduction()
         { make(supplyType); return; }
     }
     if (openingProduction()) return;
+    if (executeDueResearch()) return;
     if (frame % 120 == 0 && !pendingBuild && self->minerals() >= 200 && self->gas() >= 150)
     {
         const int phase = frame < 4320 ? 0 : frame < 8640 ? 1 : frame < 14400 ? 2 : 3;
@@ -1053,8 +1105,57 @@ void PersonaBot::army()
     }
 }
 
+void PersonaBot::logCasterState(Player player, const char* path) const
+{
+    // Replay observations are diagnostics only and never feed the live policy.
+    std::vector<Unit> enemies;
+    for (auto unit : Broodwar->getAllUnits())
+        if (unit->isVisible(player) && unit->getPlayer()->isEnemy(player) && !unit->getType().isBuilding())
+            enemies.push_back(unit);
+    std::ofstream log(path, std::ios::app);
+    for (auto caster : player->getUnits())
+    {
+        if (caster->getType() != UnitTypes::Protoss_High_Templar || !caster->isCompleted()) continue;
+        int nearest = -1, bestScore = 0;
+        for (auto target : enemies)
+        {
+            const int distance = caster->getDistance(target);
+            if (nearest < 0 || distance < nearest) nearest = distance;
+            if (distance > 288 || target->getType().isInvincible() || target->isUnderStorm()) continue;
+            int score = 0;
+            for (auto enemy : enemies) if (enemy->getDistance(target) < 64) ++score;
+            for (auto friendly : player->getUnits())
+                if (!friendly->getType().isWorker() && !friendly->getType().isBuilding() &&
+                    friendly->getDistance(target) < 64) score -= 2;
+            bestScore = std::max(bestScore, score);
+        }
+        log << Broodwar->getFrameCount() << '\t' << player->getID() << '\t' << caster->getID()
+            << '\t' << caster->getEnergy() << '\t' << player->hasResearched(TechTypes::Psionic_Storm)
+            << '\t' << player->isResearching(TechTypes::Psionic_Storm) << '\t' << nearest
+            << '\t' << bestScore << '\t' << caster->getOrder().getID()
+            << '\t' << caster->getPosition().x << '\t' << caster->getPosition().y << '\n';
+    }
+}
+
 void PersonaBot::onFrame()
 {
+    if (Broodwar->isReplay())
+    {
+        if (!std::getenv("PERSONA_REPLAY_ANALYSIS") || Broodwar->isPaused()) return;
+        if (Broodwar->getFrameCount() % 240 == 0)
+        {
+            std::ofstream("bwapi-data/write/replay-progress.txt") << Broodwar->getFrameCount() << '\n';
+            for (auto player : Broodwar->getPlayers())
+                if (player->getRace() == Races::Protoss)
+                    logCasterState(player, "bwapi-data/write/replay-casters.tsv");
+        }
+        if (testMaxFrames_ > 0 && Broodwar->getFrameCount() >= testMaxFrames_)
+        {
+            std::ofstream("bwapi-data/write/replay-analysis-limit.txt") << Broodwar->getFrameCount() << '\n';
+            Broodwar->leaveGame();
+        }
+        return;
+    }
     if (!active_ || Broodwar->isPaused() || !Broodwar->self()) return;
     if (testMaxFrames_ > 0 && Broodwar->getFrameCount() >= testMaxFrames_)
     {
@@ -1072,6 +1173,8 @@ void PersonaBot::onFrame()
     army();
     if (Broodwar->getFrameCount() % 240 == 0)
     {
+        if (Broodwar->self()->getRace() == Races::Protoss)
+            logCasterState(Broodwar->self(), "bwapi-data/write/caster-state.tsv");
         int workers = 0, troops = 0, buildings = 0;
         for (auto unit : Broodwar->self()->getUnits())
         {
