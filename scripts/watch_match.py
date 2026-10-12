@@ -16,6 +16,24 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_URL = "https://davechurchill.ca/starcraft/files/startcraft/scbw_bwapi440.zip"
 RUNTIME_SHA256 = "4546155ecfebd50f72dc407041ec0b65282aefdf083e58f96c29f55b75eb0c0e"
 DEFAULT_MAP = "maps/BroodWar/cog/(4)FightingSpirit1.3.scx"
+RUNTIME_ARCHIVES = {'stardat.mpq', 'broodat.mpq', 'starcraft.mpq', 'patch_rt.mpq'}
+
+
+def copy_runtime_file(source, destination):
+    # These game archives are read-only inputs. Settings, modules, logs and
+    # replays must remain independent files in each instance.
+    if Path(source).name.lower() in RUNTIME_ARCHIVES:
+        try:
+            os.link(source, destination)
+            return destination
+        except OSError:
+            pass  # Cross-volume/unsupported filesystems keep copy semantics.
+    return shutil.copy2(source, destination)
+
+
+def copy_runtime(runtime, folder):
+    shutil.copytree(runtime, folder, ignore=shutil.ignore_patterns('*.rep', '*.log'),
+                    copy_function=copy_runtime_file)
 
 
 def require_no_game():
@@ -140,7 +158,7 @@ def main():
     folders = []
     for index, person in enumerate(people):
         folder = session / ("left" if index == 0 else "right")
-        shutil.copytree(runtime, folder, ignore=shutil.ignore_patterns('*.rep', '*.log'))
+        copy_runtime(runtime, folder)
         package = (ROOT / "dist/players" / person["directory"] / "bwapi-data").resolve()
         if not package.is_relative_to((ROOT / "dist/players").resolve()):
             raise ValueError("Invalid person package path")

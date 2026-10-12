@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 import hashlib
 
-from watch_match import ROOT, configuration, launch, prepare_runtime, require_no_game
+from watch_match import ROOT, configuration, launch, prepare_runtime, require_no_game, copy_runtime
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
         parser.error('A local .rep file is required')
     require_no_game()
     folder = ROOT / 'dist/replay-viewers' / datetime.now().strftime('%Y%m%d-%H%M%S-%f')
-    shutil.copytree(prepare_runtime(), folder, ignore=shutil.ignore_patterns('*.rep', '*.log'))
+    copy_runtime(prepare_runtime(), folder)
     (folder / 'maps/replays').mkdir(exist_ok=True)
     shutil.copy2(replay, folder / 'maps/replays/watch.rep')
     (folder / 'bwapi-data/AI').mkdir(exist_ok=True)
