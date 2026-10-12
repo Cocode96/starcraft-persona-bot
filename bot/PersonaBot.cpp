@@ -235,7 +235,7 @@ void PersonaBot::rally()
 
 TilePosition PersonaBot::buildTile(UnitType type) const
 {
-    const auto home = Broodwar->self()->getStartLocation();
+    auto home = Broodwar->self()->getStartLocation();
     const auto blocked = [this, type](TilePosition tile)
     {
         const auto entry = failedBuildSites_.find({type.getID(), tile.y * Broodwar->mapWidth() + tile.x});
@@ -246,6 +246,27 @@ TilePosition PersonaBot::buildTile(UnitType type) const
     for (const auto& placement : placements_)
         if (placement.typeId == type.getID() && placement.ordinal == ordinal && !blocked(placement.tile))
             return placement.tile;
+    // Repeatedly trying nearby tiles inside a crowded main can leave supply
+    // construction unreachable. After a failed later pylon, use a less crowded base.
+    if (type == UnitTypes::Protoss_Pylon && count(type) >= 3)
+    {
+        bool failed = false;
+        for (const auto& entry : failedBuildSites_)
+            if (entry.first.first == type.getID() && entry.second > Broodwar->getFrameCount()) failed = true;
+        if (failed)
+        {
+            int leastBuildings = std::numeric_limits<int>::max();
+            for (auto base : Broodwar->self()->getUnits())
+                if (base->getType().isResourceDepot() && base->isCompleted())
+                {
+                    int buildings = 0;
+                    for (auto unit : Broodwar->self()->getUnits())
+                        if (unit->getType().isBuilding() && unit->getDistance(base) < 512) ++buildings;
+                    if (buildings < leastBuildings)
+                    { leastBuildings = buildings; home = base->getTilePosition(); }
+                }
+        }
+    }
     if (type.isRefinery())
     {
         TilePosition best = TilePositions::None;
@@ -809,7 +830,7 @@ void PersonaBot::imitationProduction()
     {
         // During recorded openings only recover a real supply block, preserving observed supply timing.
         if (config_.schemaVersion < 3 || frame > config_.openingEndFrame || self->supplyTotal() - self->supplyUsed() <= 0)
-        { make(supplyType); return; }
+        { if (make(supplyType)) return; }
     }
     if (openingProduction()) return;
     if (executeDueResearch()) return;
