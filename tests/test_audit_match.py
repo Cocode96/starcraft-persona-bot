@@ -24,6 +24,22 @@ class RuntimeAuditTests(unittest.TestCase):
             self.assertEqual(len(result['worker_swarm_events']), 1)
             self.assertEqual(result['state'], 'issues_found')
 
+    def test_live_game_stays_incomplete_until_end_callback(self):
+        with tempfile.TemporaryDirectory() as root:
+            write = Path(root) / 'bwapi-data/write'
+            write.mkdir(parents=True)
+            (write / 'live-status.tsv').write_text('frame\tworkers\tarmy\tbuildings\tminerals\tgas\tbuilder\tbuild_type\n9600\t20\t8\t4\t200\t100\t-1\t-1\n')
+            (write / 'map-plan.tsv').write_text('home\t7\t6\nbase\t14\t38\n')
+            (write / 'structure-events.tsv').write_text('0\t1\t131\t7\t6\n3000\t2\t131\t14\t38\n')
+            (write / 'scout-orders.tsv').write_text('1800\t3\n')
+            (write / 'rally-orders.tsv').write_text('1900\t1\n')
+            (write / 'test-limit.txt').write_text('9700\n')
+            self.assertEqual(audit_player(root)['state'], 'incomplete')
+            (write / 'persona-results.txt').write_text('Test\ttest_limit\t9701\n')
+            report = audit_player(root)
+            self.assertEqual(report['state'], 'checks_passed')
+            self.assertTrue(report['match_finished'])
+
 
 if __name__ == '__main__':
     unittest.main()

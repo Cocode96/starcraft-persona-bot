@@ -26,6 +26,10 @@ def audit_player(folder):
     plan = rows(root / 'map-plan.tsv')
     natural = next((tuple(map(int, row[1:3])) for row in plan if row[0] == 'base'), None)
     frame = status[-1]['frame'] if status else 0
+    results = rows(root / 'persona-results.txt')
+    result = results[-1] if results else []
+    finished = (len(result) == 3 and result[1] in ('win', 'loss', 'test_limit')
+                and result[2].isdigit() and int(result[2]) >= frame)
     findings = []
     if not status:
         findings.append('No in-game telemetry; launch alone is not verification.')
@@ -71,7 +75,8 @@ def audit_player(folder):
         findings.append('No successful rally command recorded by frame 6000.')
     return {
         'observed_frame': frame,
-        'state': 'issues_found' if findings else 'incomplete' if frame < 9000 else 'checks_passed',
+        'state': 'issues_found' if findings else 'incomplete' if frame < 9000 or not finished else 'checks_passed',
+        'match_finished': finished, 'result': result if finished else None,
         'findings': findings,
         'natural_tile': natural, 'first_expansion': first_expansion, 'first_expansion_at_natural': expansion_ok,
         'depots_started': len(depots), 'opening_timeouts': sum(row[-1] == 'timeout' for row in opening),
