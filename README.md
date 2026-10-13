@@ -10,6 +10,7 @@
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square)
 ![BWAPI 4.4.0](https://img.shields.io/badge/BWAPI-4.4.0-7549BB?style=flat-square)
 ![Stage: Experimental](https://img.shields.io/badge/Stage-Experimental-D89535?style=flat-square)
+[![Checks](https://github.com/Cocode96/starcraft-persona-bot/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/Cocode96/starcraft-persona-bot/actions/workflows/checks.yml)
 
 [경기 보기](#경기-보기) / [작동 방식](#개인별로-반영한-것) / [검증 결과](#로컬-검증-결과) / [환경 준비](#준비와-학습)
 
@@ -290,7 +291,7 @@ Visual Studio 솔루션은 `build/StarCraftPersonaBot.sln`이다. `persona/unit_
 bash scripts/cloud_setup.sh
 ```
 
-이 스크립트는 Python과 BWAPI에 의존하지 않는 C++ 설정 테스트를 실행한다. 게임 DLL 빌드와 대전은 Windows 환경이 필요하다. 개인 데이터는 Git에 없으므로 클라우드에서 재학습하려면 별도로 전달해야 한다. GitHub Actions 설정은 포함되어 있지만 원격 실행은 검증하지 않았다.
+이 스크립트는 Python과 BWAPI에 의존하지 않는 C++ 설정 테스트를 실행한다. 게임 DLL 빌드와 대전은 Windows 환경이 필요하다. 개인 데이터는 Git에 없으므로 클라우드에서 재학습하려면 별도로 전달해야 한다. 2026-10-13 커밋 `846ae80`의 [첫 GitHub Actions 실행](https://github.com/Cocode96/starcraft-persona-bot/actions/runs/38331179064)에서 Linux 분석/범용 C++ 테스트와 Windows x86 봇 빌드/CTest가 모두 통과했다. 실제 게임 대전은 로컬에서 검증한다.
 
 ## 참고
 
