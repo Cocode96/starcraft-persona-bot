@@ -67,7 +67,19 @@ python scripts/watch_replay.py --analyze --max-frames 24000
 
 평가는 지원하는 유닛의 생산 명령 예측 정확도와 음의 로그 가능도를 측정한다. 비교 대상은 같은 종족의 여러 사람을 합친 모델이며, 평가 경기와 평가 시작 시점 이후의 경기를 제외한다. 개인 모델이 항상 비교 모델보다 낫지는 않았다. 이 지표는 승률이나 사람과 닮은 정도를 뜻하지 않는다. 상세 수치와 분할 경기 ID는 로컬 `data/roster/*/model.json`의 `evaluation`에 있다.
 
-Python 테스트 35개, Windows x86 DLL 빌드, C++ 설정/전투 판단/공급 관리/생산능력/채취 균형/DLL 로드 테스트 6개를 통과했다. 기존 28개 INI와 실행마다 생성한 schema 3 설정의 BWAPI 타입과 종족도 검사한다. 최근 후보 5개(Lavaa 3개, Doran_e 2개)의 내보내기 설정도 검사했다. 이 검사는 실제 게임 검증을 대체하지 않는다.
+Python 테스트 41개, Windows x86 DLL 빌드, C++ 설정/전투 판단/공급 관리/생산능력/채취 균형/DLL 로드 테스트 6개를 통과했다. 기존 28개 INI와 실행마다 생성한 schema 3 설정의 BWAPI 타입과 종족도 검사한다. 최근 후보 5개(Lavaa 3개, Doran_e 2개)의 내보내기 설정도 검사했다. 이 검사는 실제 게임 검증을 대체하지 않는다.
+
+최근 모델은 다음 명령으로 시간순 평가할 수 있다. 평가할 경기보다 시작 시각이 엄격하게 이른 경기만 학습에 넣고, 같은 시각과 이후의 경기, 상대 선수 기록을 포함한 원본 전체에서 미래 데이터를 제외한다. 현재 활동 구간의 같은 상대 종족 선행 경기가 최소 2개일 때 평가하며, 원본 경기 ID와 생략 이유를 로컬 JSON에 남긴다. 생산 버튼 반복 입력을 같은 방식으로 정리한 과거 개인 모델과 비교하고 경기별 점수를 같은 비중으로 평균한다.
+
+```powershell
+python -m persona.evaluate_current Lavaa --race Zerg --opponent Protoss --output data/evaluation-current/Lavaa-vs-Protoss.json
+python -m persona.evaluate_current Doran_e --race Protoss --opponent Zerg --output data/evaluation-current/Doran_e-vs-Zerg.json
+python -m persona.evaluate_current Doran_e --race Protoss --opponent Zerg --policy-prior-games 1 --output data/evaluation-current/Doran_e-vs-Zerg.candidate.json
+```
+
+10월 13일 추가 평가에서는 Lavaa 저프전 1경기(전투 명령 24개), Doran_e 저그전 4경기(전투 명령 220개)만 평가 가능했다. 희소한 시간대에서 이미 관찰된 선택이 확률 0이 되는 문제를 줄이려고, 같은 사람의 최근 같은 상대 종족 전체 시간대 분포를 1경기 분량으로 보완하는 후보를 실험했다. 새 유닛이나 다른 사람의 선택을 만들어 넣지는 않는다. 후보의 Doran_e 전투 명령 정확도는 경기 평균 64.9%에서 68.1%로 변했지만, 일꾼 포함 정확도는 61.3%에서 51.1%로 떨어졌다. Lavaa 전투 정확도는 95.8%로 같았지만 음의 로그 가능도는 0.323에서 0.431로 나빠졌다. 이 점수는 생산 입력 예측이며 승률이나 개인 유사성이 아니다. 같은 평가 자료를 보고 설계한 후보이므로 독립적인 최종 성능 검증으로 제시하지 않는다.
+
+따라서 후보는 기본 봇에 적용하지 않았다. `--policy-prior-games` 기본값은 0이고 관람 실행기는 이 기본값을 쓴다. 실험값 1은 평가 또는 `persona.temporal` 내보내기에서 명시적으로 선택해야 한다. 후보를 포함한 INI 4개가 BWAPI 계약 검사를 통과했고, 기본 INI는 두 사람과 시드 1/5/9/42의 8조합에서 이전 커밋과 바이트 단위로 일치했다. 이번 변경은 분석/실험 경로이며 새 DLL이나 실제 경기 결과를 추가한 것은 아니다. 평가와 후보 모델은 `data/evaluation-current/`에만 저장한다.
 
 2026-10-13 현재 실제 경기 검증 기록:
 
