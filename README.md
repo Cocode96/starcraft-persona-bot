@@ -1,12 +1,58 @@
+<div align="center">
+
+![StarCraft Persona Bot — Replay to Persona to BWAPI](assets/readme-banner.svg)
+
 # StarCraft Persona Bot
 
-스타크래프트 리플레이에서 개인별 선택을 추출하고, 직접 상대할 수 있는 BWAPI 봇에 반영한다. 사용자가 확정한 목표는 Lavaa와 지인 각각의 평소 플레이를 재현하는 대전 봇이다. Pluto급 실력은 요구사항이 아니다. 구현과 평가는 개인별 선택과 행동의 유사성을 기준으로 한다.
+**리플레이에 남은 선택을, 다시 상대할 수 있는 봇으로.**
+
+![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?style=flat-square)
+![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square)
+![BWAPI 4.4.0](https://img.shields.io/badge/BWAPI-4.4.0-7549BB?style=flat-square)
+![Stage: Experimental](https://img.shields.io/badge/Stage-Experimental-D89535?style=flat-square)
+
+[경기 보기](#경기-보기) / [작동 방식](#개인별로-반영한-것) / [검증 결과](#로컬-검증-결과) / [환경 준비](#준비와-학습)
+
+</div>
+
+스타크래프트 리플레이에서 개인별 선택을 추출하고, 직접 상대할 수 있는 BWAPI 봇에 반영한다. 목표는 Lavaa와 함께 게임하는 사람들의 빌드 선택과 운영 습관을 재현하는 것이다. 구현과 평가는 개인별 선택과 행동의 유사성을 기준으로 한다.
 
 현재 버전은 저그, 테란, 프로토스의 생산 명령 비율과 실제 경기의 빌드 순서를 사용하는 통계적 모방 모델이다. 신경망이나 자가 대전 리그 학습은 사용하지 않는다. 별도 브루드워 1.16.1 환경에서 Lavaa와 Doran_e의 실제 봇 대전과 리플레이 저장을 확인했다. 사람이 알아볼 정도의 개인 플레이 재현은 아직 검증하지 않았다.
 
+## 현재 상태
+
+| 영역 | 구현과 확인 범위 |
+| --- | --- |
+| 리플레이 분석 | 원본 431개에서 중복을 제외한 424경기 분석, 파싱 오류 0건 |
+| 개인별 모델 | 7명의 주 종족별 통계 모델, 상대 종족과 시간 구간별 생산 입력 분포 |
+| 실제 실행 | Lavaa(Zerg)와 Doran_e(Protoss)의 BWAPI 대전, 경기 로그와 리플레이 저장 |
+| 검증 | Python 테스트 41개, C++/DLL 검사 6개 통과한 로컬 검증 기록 |
+| 진행 중 | 상황에 맞는 전략 전환, 방어와 템플러 보호, 사람이 알아볼 정도의 유사성 평가 |
+
+```mermaid
+flowchart LR
+    A[리플레이] --> B[명령 추출과 중복 제거]
+    B --> C[개인별 통계 모델]
+    C --> D[빌드와 생산 설정]
+    D --> E[BWAPI 봇 대전]
+    E --> F[로그 검사와 리플레이 검토]
+```
+
+> 모델은 리플레이의 입력 명령을 바탕으로 한다. 현재 대전 결과가 자동으로 모델에 되먹임되는 자가 학습 구조는 아니다.
+
 ## 경기 보기
 
-바탕화면의 이 프로젝트 폴더에서 `watch-match.cmd`를 실행하면 Lavaa와 Doran_e가 투혼 1.3에서 대전한다. 두 창은 서로 다른 게임 폴더와 설정을 사용한다. 이미 StarCraft가 실행 중이면 중복 실행을 막는다. 끝난 경기는 `watch-last-replay.cmd`로 다시 열 수 있다. 시작 카메라는 한쪽 본진을 비추며 미니맵을 눌러 관람 위치를 바꿀 수 있다.
+**이미 데이터와 실행 환경을 준비한 로컬 PC**에서는 이 프로젝트 폴더에서 `watch-match.cmd`를 실행하면 Lavaa와 Doran_e가 투혼 1.3에서 대전한다. 두 창은 서로 다른 게임 폴더와 설정을 사용한다. 이미 StarCraft가 실행 중이면 중복 실행을 막는다. 끝난 경기는 `watch-last-replay.cmd`로 다시 열 수 있다. 시작 카메라는 한쪽 본진을 비추며 미니맵을 눌러 관람 위치를 바꿀 수 있다.
+
+> 처음 복제했다면 아래 [준비와 학습](#준비와-학습)부터 진행한다. 개인 데이터, 생성된 모델과 게임 실행 파일은 저장소에 포함되지 않는다.
+
+```powershell
+python scripts/watch_match.py --left Lavaa --right Doran_e
+python scripts/watch_replay.py
+```
+
+<details>
+<summary><strong>실행 옵션, 반복 검증과 리플레이 진단</strong></summary>
 
 ```powershell
 python scripts/watch_match.py --left Lavaa --right Doran_e
@@ -31,6 +77,8 @@ python scripts/watch_replay.py --analyze --max-frames 24000
 
 공유 자료를 사용한 08:21 실제 대전과 `dist/replay-viewers/20261013-082925-408652`의 저장 경기 재생을 확인했다. 후자는 1,001프레임 제한 종료이며 원본 리플레이 해시와 초기 난수가 일치하고 유닛 명령 로그가 생성되지 않았다. 전체 리플레이 재생 완료 검증은 아니다.
 
+</details>
+
 ## 개인별로 반영한 것
 
 - 상대 종족과 경기 시간 구간별 유닛 생산 명령 비율. 각 경기에 같은 가중치를 주고, 상대 종족 표본이 3경기 미만이면 해당 사람의 전체 경기로 보완한다.
@@ -51,6 +99,19 @@ python scripts/watch_replay.py --analyze --max-frames 24000
 
 ## 로컬 검증 결과
 
+**확인 기준일: 2026-10-13**
+
+| 실제 경기에서 확인한 것 | 해석 범위 |
+| --- | --- |
+| 양쪽 앞마당 생성, 정찰/랠리, 건설 일꾼 중복 방지 | 기본 운영 검사이며 링을 완전히 막는 심시티 판정은 아님 |
+| 저그 7해처리 규모, 후반 공급 포화 0/65표본 | 마지막 풀 선행 경기의 관찰 결과, 모든 빌드의 개선을 보장하지 않음 |
+| 가스 과잉 시 미네랄 전환과 가스 채취 재개 | 공통 실행 규칙의 실제 동작, 개인 채취 습관 학습은 아님 |
+| 토스 스톰 연구 완료와 시전 명령 18회 접수 | 마지막 경기 기준, 적중 피해와 템플러 호위 효과는 미측정 |
+
+
+<details>
+<summary><strong>리플레이 표본과 과거 평가</strong></summary>
+
 2026-10-12 기준 원본 431개를 읽고 바이트 중복 6개와 저장 형태가 다른 동일 경기 1개를 제외해 424경기를 분석했다. 파싱 오류는 없었다. 원본은 수정하지 않았다.
 
 사람 두 명이 서로 다른 팀으로 참여한 1,440프레임 이상 경기를 종족별로 분류했다. 다음 표는 기존 schema 2의 시간순 분할 평가다. 각 사람의 가장 많이 플레이한 종족을 선택하고 최근 약 20%를 평가용으로 남겼다. 이 과거 평가 모델에는 평가 경기의 입력이 포함되지 않는다. schema 3 최근 배포와는 별개다.
@@ -67,7 +128,12 @@ python scripts/watch_replay.py --analyze --max-frames 24000
 
 평가는 지원하는 유닛의 생산 명령 예측 정확도와 음의 로그 가능도를 측정한다. 비교 대상은 같은 종족의 여러 사람을 합친 모델이며, 평가 경기와 평가 시작 시점 이후의 경기를 제외한다. 개인 모델이 항상 비교 모델보다 낫지는 않았다. 이 지표는 승률이나 사람과 닮은 정도를 뜻하지 않는다. 상세 수치와 분할 경기 ID는 로컬 `data/roster/*/model.json`의 `evaluation`에 있다.
 
+</details>
+
 Python 테스트 41개, Windows x86 DLL 빌드, C++ 설정/전투 판단/공급 관리/생산능력/채취 균형/DLL 로드 테스트 6개를 통과했다. 기존 28개 INI와 실행마다 생성한 schema 3 설정의 BWAPI 타입과 종족도 검사한다. 최근 후보 5개(Lavaa 3개, Doran_e 2개)의 내보내기 설정도 검사했다. 이 검사는 실제 게임 검증을 대체하지 않는다.
+
+<details>
+<summary><strong>최근 경기 시간순 평가와 실험 후보</strong></summary>
 
 최근 모델은 다음 명령으로 시간순 평가할 수 있다. 평가할 경기보다 시작 시각이 엄격하게 이른 경기만 학습에 넣고, 같은 시각과 이후의 경기, 상대 선수 기록을 포함한 원본 전체에서 미래 데이터를 제외한다. 현재 활동 구간의 같은 상대 종족 선행 경기가 최소 2개일 때 평가하며, 원본 경기 ID와 생략 이유를 로컬 JSON에 남긴다. 생산 버튼 반복 입력을 같은 방식으로 정리한 과거 개인 모델과 비교하고 경기별 점수를 같은 비중으로 평균한다.
 
@@ -80,6 +146,11 @@ python -m persona.evaluate_current Doran_e --race Protoss --opponent Zerg --poli
 10월 13일 추가 평가에서는 Lavaa 저프전 1경기(전투 명령 24개), Doran_e 저그전 4경기(전투 명령 220개)만 평가 가능했다. 희소한 시간대에서 이미 관찰된 선택이 확률 0이 되는 문제를 줄이려고, 같은 사람의 최근 같은 상대 종족 전체 시간대 분포를 1경기 분량으로 보완하는 후보를 실험했다. 새 유닛이나 다른 사람의 선택을 만들어 넣지는 않는다. 후보의 Doran_e 전투 명령 정확도는 경기 평균 64.9%에서 68.1%로 변했지만, 일꾼 포함 정확도는 61.3%에서 51.1%로 떨어졌다. Lavaa 전투 정확도는 95.8%로 같았지만 음의 로그 가능도는 0.323에서 0.431로 나빠졌다. 이 점수는 생산 입력 예측이며 승률이나 개인 유사성이 아니다. 같은 평가 자료를 보고 설계한 후보이므로 독립적인 최종 성능 검증으로 제시하지 않는다.
 
 따라서 후보는 기본 봇에 적용하지 않았다. `--policy-prior-games` 기본값은 0이고 관람 실행기는 이 기본값을 쓴다. 실험값 1은 평가 또는 `persona.temporal` 내보내기에서 명시적으로 선택해야 한다. 후보를 포함한 INI 4개가 BWAPI 계약 검사를 통과했고, 기본 INI는 두 사람과 시드 1/5/9/42의 8조합에서 이전 커밋과 바이트 단위로 일치했다. 이번 변경은 분석/실험 경로이며 새 DLL이나 실제 경기 결과를 추가한 것은 아니다. 평가와 후보 모델은 `data/evaluation-current/`에만 저장한다.
+
+</details>
+
+<details>
+<summary><strong>실제 대전 기록과 실행 규칙 — 2026-10-13</strong></summary>
 
 2026-10-13 현재 실제 경기 검증 기록:
 
@@ -137,11 +208,21 @@ python -m persona.evaluate_current Doran_e --race Protoss --opponent Zerg --poli
 
 사용자가 답한 두 상황별 선택과 개인 성향 기억은 Git에서 제외한 `data/style-feedback.json`에 출처를 구분해 보관한다. 자동으로 학습된 정책이라고 표시하지 않는다. `python -m persona.micro Doran_e --replay-root <원본폴더>`는 스톰 전후 선택과 명령을 추출한다. 47경기에서 스톰 입력 939회를 찾았으나 실제 적중, 생존, 뮤탈 손실은 판정하지 않는다. 결과는 `data/caster-evidence.json`이다.
 
-GitHub 원격과 클라우드 실행은 아직 없다.
+</details>
 
 ## 준비와 학습
 
-Python 3.11 이상, Visual Studio 2022의 C++ 데스크톱 개발과 CMake 도구가 필요하다. 저장소 루트에서 실행한다.
+| 작업 | 필요한 환경 |
+| --- | --- |
+| 분석과 모델 평가 | Python 3.11 이상, 로컬 리플레이 |
+| 봇 DLL 빌드 | Windows, Visual Studio 2022 C++ 데스크톱 개발, CMake, BWAPI 4.4.0 |
+| 실제 경기 | 별도 브루드워 1.16.1/BWAPI 환경, 생성된 개인별 패키지 |
+
+저장소 루트에서 실행한다. `train-roster` 전에 로컬 `data/player-identities.json`을 아래 형식으로 준비한다. `nickname`에는 리플레이에 기록된 정확한 닉네임을 사용한다.
+
+```json
+{"players": [{"nickname": "ExactNickname", "display_name": "ConfirmedName"}]}
+```
 
 ```powershell
 python scripts/bootstrap.py --bwapi
@@ -156,11 +237,7 @@ python scripts/select_persona.py Lavaa
 
 `bootstrap.py`는 공식 릴리스의 고정 버전 screp v1.13.7과 BWAPI 4.4.0을 `tools/`에 준비하고 SHA-256을 대조한다. 분석과 통계 모델에는 외부 Python 패키지, GPU와 OpenAI API 키가 필요하지 않다. 설치된 게임을 수정하지 않는다.
 
-`train-roster`는 로컬 `data/player-identities.json`에서 사용자가 확인한 닉네임과 이름을 읽는다. 이 파일과 모든 개인 모델, 원본 리플레이는 Git에서 제외한다. 처음 복제한 저장소에서 여러 사람을 학습하려면 다음 형식의 파일을 준비한다. Lavaa는 기본 포함된다.
-
-```json
-{"players": [{"nickname": "ExactNickname", "display_name": "ConfirmedName"}]}
-```
+`train-roster`는 위 파일에서 확인된 닉네임과 이름을 읽는다. Lavaa는 기본 포함된다. 인물 매핑, 개인 모델과 원본 리플레이는 Git에서 제외한다.
 
 한 명만 처리할 수도 있다.
 
@@ -195,7 +272,7 @@ python -m persona.cli export-model data/Lavaa-model.json --opponent Protoss --se
 
 지원 유닛만 생산하고 아칸 합체, 수송과 드롭, 섬맵 이동과 일부 마법은 구현하지 않았다. 확장과 일꾼 배분, 전투력 추정은 공통 규칙이다. 생산 정책에 등장하는 유닛의 선행 건물과 기술을 보완하지만 하이브를 자동으로 선택하지는 않는다. 리플레이 명령 시간과 실제 상황이 다를 때의 전략 전환, 다방향 견제, 템플러 호위의 실제 효과는 추가 검증이 필요하다. 공통 실행 규칙이 개인 특성을 얼마나 바꾸는지도 아직 측정하지 않았다.
 
-## 코드와 클라우드 환경
+## 프로젝트 구조와 실행 환경
 
 | 경로 | 역할 |
 | --- | --- |
@@ -207,7 +284,7 @@ python -m persona.cli export-model data/Lavaa-model.json --opponent Protoss --se
 
 Visual Studio 솔루션은 `build/StarCraftPersonaBot.sln`이다. `persona/unit_types.json`은 BWAPI 4.4.0 정적 타입 정보이며 빌드된 `unit_catalog.exe`로 다시 생성할 수 있다.
 
-현재 단계는 로컬 Windows 환경이 적합하다. Codex Cloud는 GitHub에 저장소를 올린 후 리플레이 분석 코드와 테스트 작업에 사용할 수 있다. 클라우드 환경의 저장소로 이 프로젝트를 선택하고 Python 3.11 이상, CMake와 C++17 컴파일러를 준비한 뒤 설정 명령으로 다음을 사용한다.
+실제 경기 실행과 DLL 빌드는 로컬 Windows 환경에서 진행한다. Codex Cloud에서는 이 저장소의 리플레이 분석 코드와 테스트를 작업할 수 있다. 클라우드 환경의 저장소로 이 프로젝트를 선택하고 Python 3.11 이상, CMake와 C++17 컴파일러를 준비한 뒤 설정 명령으로 다음을 사용한다.
 
 ```bash
 bash scripts/cloud_setup.sh

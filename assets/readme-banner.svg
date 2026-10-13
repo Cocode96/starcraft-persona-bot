@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="280" viewBox="0 0 1120 280" role="img" aria-labelledby="title desc">
+  <title id="title">StarCraft Persona Bot</title>
+  <desc id="desc">Replay commands become personal models and run in a BWAPI bot. Experimental project.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#111827"/><stop offset="1" stop-color="#1b1432"/></linearGradient>
+    <linearGradient id="accent"><stop stop-color="#61d5c8"/><stop offset="1" stop-color="#b39bff"/></linearGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M 28 0 H 0 V 28" fill="none" stroke="#ffffff" stroke-opacity=".035"/></pattern>
+  </defs>
+  <rect width="1120" height="280" rx="18" fill="url(#bg)"/>
+  <rect width="1120" height="280" rx="18" fill="url(#grid)"/>
+  <rect x="44" y="48" width="5" height="172" rx="2" fill="url(#accent)"/>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="70" y="74" font-size="12" fill="#78dfd2" letter-spacing="3">REPLAY-DRIVEN IMITATION</text>
+    <text x="66" y="126" font-size="42" font-weight="700" fill="#f3f5fb" letter-spacing="1">STARCRAFT</text>
+    <text x="68" y="174" font-size="42" font-weight="300" fill="#c3b5f5" letter-spacing="2">PERSONA BOT</text>
+    <text x="70" y="211" font-size="14" fill="#a5aec1">Observe choices. Build a playable persona.</text>
+    <g fill="#191e33" stroke="#424760">
+      <rect x="613" y="98" width="122" height="80" rx="12"/>
+      <rect x="775" y="98" width="122" height="80" rx="12"/>
+      <rect x="937" y="98" width="122" height="80" rx="12"/>
+    </g>
+    <g fill="none" stroke="#81bfbf" stroke-width="2"><path d="M 743 138 H 765 M 759 132 L 765 138 L 759 144"/><path d="M 905 138 H 927 M 921 132 L 927 138 L 921 144"/></g>
+    <g font-size="15" font-weight="600" fill="#e4e8f5" text-anchor="middle"><text x="674" y="132">REPLAY</text><text x="836" y="132">PERSONA</text><text x="998" y="132">BWAPI</text></g>
+    <g font-size="11" fill="#a5aec1" text-anchor="middle"><text x="674" y="154">COMMANDS</text><text x="836" y="154">CHOICES</text><text x="998" y="154">LIVE MATCH</text></g>
+    <text x="1059" y="220" text-anchor="end" font-size="11" fill="#9b91b8" letter-spacing="2">C++ / PYTHON / BROOD WAR</text>
+  </g>
+</svg>
