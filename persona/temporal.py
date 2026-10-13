@@ -5,6 +5,7 @@ handicap or user-reported form adjustment is applied to the bot.
 """
 from collections import Counter
 import json
+import math
 from pathlib import Path
 import re
 import random
@@ -82,7 +83,23 @@ def choose_opening(candidates, latest, seed):
     return selected, evidence
 
 
-def build_current(document, name, race, opponent, target_map='Fighting Spirit', seed=42):
+def weighted_choices(samples, race, latest, phase_index=None):
+    counts, total_weight = Counter(), 0.0
+    for sample in samples:
+        local = Counter(e['id'] for e in production_intents(sample['player']['events'], race)
+                        if e['kind'] == 'train' and e['id'] in SUPPORTED_UNITS[race]
+                        and (phase_index is None or phase(e['frame']) == phase_index))
+        if not local:
+            continue
+        weight = recency_weight(sample, latest)
+        total_weight += weight
+        counts.update({unit: weight * count / sum(local.values()) for unit, count in local.items()})
+    return counts, total_weight
+
+
+def build_current(document, name, race, opponent, target_map='Fighting Spirit', seed=42, policy_prior_games=0):
+    if not math.isfinite(policy_prior_games) or not 0 <= policy_prior_games <= 10:
+        raise ValueError('policy_prior_games must be finite and between 0 and 10')
     all_samples = samples_for(document, name, race)
     recent = current_period(all_samples)
     if not recent:
@@ -98,19 +115,24 @@ def build_current(document, name, race, opponent, target_map='Fighting Spirit', 
     latest = max(timestamp(s['start_time']) for s in recent)
     selected, opening_candidates = choose_opening(candidates, latest, seed)
     model = fit_model(recent, name, race)
+    prior_counts, prior_total = weighted_choices(matchup, race, latest)
+    if policy_prior_games and not prior_total:
+        raise ValueError(f'No supported production commands in current {opponent} matchup for {name}')
+    prior = {unit: count / prior_total for unit, count in prior_counts.items()} if prior_total else {}
     policies = []
+    phase_evidence = []
     for index in range(4):
-        weighted, total_weight = Counter(), 0.0
-        for sample in policy_samples:
-            counts = Counter(e['id'] for e in production_intents(sample['player']['events'], race)
-                             if e['kind'] == 'train' and e['id'] in SUPPORTED_UNITS[race] and phase(e['frame']) == index)
-            if not counts:
-                continue
-            weight = recency_weight(sample, latest)
-            total_weight += weight
-            weighted.update({unit: weight * count / sum(counts.values()) for unit, count in counts.items()})
-        policies.append({str(unit): count / total_weight for unit, count in sorted(weighted.items())}
-                        if total_weight else model['policies'][opponent][index])
+        weighted, total_weight = weighted_choices(policy_samples, race, latest, index)
+        # An opt-in game-equivalent prior shares only this person's observed choices in
+        # the current matchup across phases. Never invent units from another race,
+        # another player or a held-out game merely to remove zero probabilities.
+        if policy_prior_games:
+            weighted.update({unit: policy_prior_games * probability for unit, probability in prior.items()})
+        denominator = total_weight + policy_prior_games
+        policies.append({str(unit): count / denominator for unit, count in sorted(weighted.items())}
+                        if denominator else model['policies'][opponent][index])
+        phase_evidence.append({'phase': index, 'observed_game_weight': total_weight,
+                               'prior_fraction': policy_prior_games / denominator if denominator else 0})
     model['policies'][opponent] = policies
     model['schema_version'] = 3
     model['method'] = 'current_period_map_matchup_imitation'
@@ -126,6 +148,9 @@ def build_current(document, name, race, opponent, target_map='Fighting Spirit', 
         'production_evidence': 'Producer build-time filtered command opportunities; not successful unit counts.',
         'opening_selection': 'Whole observed game sampled by frequency and recency within map/matchup candidates.',
         'seed': seed, 'opening_candidates': opening_candidates,
+        'policy_prior': {'game_weight': policy_prior_games,
+                         'source': 'Same player, current period, same matchup, all phases; filtered commands.',
+                         'phase_evidence': phase_evidence},
     }
     model['selected_events'] = selected['player']['events']
     attacks = [s['player']['first_distant_attack_command_frame'] for s in policy_samples
@@ -225,11 +250,14 @@ def main():
     parser.add_argument('--input', default='data/replays-v2.json')
     parser.add_argument('--output', required=True)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--policy-prior-games', type=float, default=0,
+                        help='Experimental cross-phase prior weight; 0 preserves the deployed policy')
     args = parser.parse_args()
     if not 0 <= args.seed <= 2147483647:
         parser.error('seed must be 0..2147483647')
     document = json.loads(Path(args.input).read_text(encoding='utf-8'))
-    model = build_current(document, args.name, args.race, args.opponent, args.map, args.seed)
+    model = build_current(document, args.name, args.race, args.opponent, args.map, args.seed,
+                          args.policy_prior_games)
     export_current(model, args.output)
     print(json.dumps(model['context'], ensure_ascii=False, indent=2))
 

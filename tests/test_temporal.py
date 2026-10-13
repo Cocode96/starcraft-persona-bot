@@ -10,6 +10,28 @@ from test_imitation import dataset
 
 
 class TemporalTests(unittest.TestCase):
+    def test_sparse_phases_share_observed_matchup_choices_without_inventing_units(self):
+        data = dataset()
+        model = build_current(data, 'PlayerA', 'Zerg', 'Protoss', policy_prior_games=1)
+        for policy in model['policies']['Protoss']:
+            self.assertAlmostEqual(sum(policy.values()), 1)
+            self.assertGreater(policy['38'], 0)
+            self.assertGreater(policy['37'], 0)
+            self.assertNotIn('43', policy)
+        self.assertEqual(model['context']['policy_prior']['game_weight'], 1)
+        self.assertTrue(any(e['prior_fraction'] == 1
+                            for e in model['context']['policy_prior']['phase_evidence']))
+
+    def test_candidate_is_opt_in_and_invalid_prior_rejected(self):
+        data = dataset()
+        default = build_current(data, 'PlayerA', 'Zerg', 'Protoss')
+        explicit = build_current(data, 'PlayerA', 'Zerg', 'Protoss', policy_prior_games=0)
+        self.assertEqual(default, explicit)
+        self.assertEqual(default['context']['policy_prior']['game_weight'], 0)
+        for weight in (-1, 11, float('nan'), float('inf')):
+            with self.assertRaises(ValueError):
+                build_current(data, 'PlayerA', 'Zerg', 'Protoss', policy_prior_games=weight)
+
     def test_spam_train_inputs_do_not_demand_dozens_of_probes_before_pylon(self):
         events = [{'frame': frame, 'kind': 'train', 'id': 64, 'producer_tags': [99]}
                   for frame in (3, 4, 103, 108, 112, 116, 121, 142, 147, 337, 342, 346)]
